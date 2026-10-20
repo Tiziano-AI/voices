@@ -1,0 +1,147 @@
+.voice-rack {
+  min-width: 0;
+  padding: 18px;
+  border-right: 1px solid var(--line);
+  background: #0b0d11;
+}
+
+.voice-rack-header,
+.workbench-header,
+.modal-header,
+.inspector-topline,
+.panel-heading,
+.script-header,
+.board-header,
+.audition-card-header,
+.compare-lane-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.voice-rack-header h2,
+.workbench-title h1,
+.inspector-panel h2,
+.creation-rail h2,
+.modal-header h3,
+.board-header h2 {
+  margin: 0.18rem 0 0;
+  letter-spacing: -0.045em;
+}
+
+.voice-rack-header h2 {
+  font-size: 1.45rem;
+}
+
+.voice-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  max-height: calc(100vh - 190px);
+  overflow: auto;
+  padding: 0 4px 0 0;
+}
+
+.voice-row {
+  display: grid;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.voice-row:hover,
+.voice-row.is-selected {
+  border-color: var(--accent-line);
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.voice-row-main {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.voice-row-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.voice-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+}
+
+.voice-row-desc {
+  font-size: 0.82rem;
+}
+
+.voice-row-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .voice-rack {
+    order: 2;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .voice-list {
+    max-height: min(680px, 70vh);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .voice-row {
+    gap: 7px;
+    padding: 10px 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+  }
+
+  .voice-row:first-child {
+    border-top: 0;
+  }
+
+  .voice-row:hover,
+  .voice-row.is-selected {
+    padding-inline: 8px;
+    border-left: 2px solid var(--accent);
+  }
+
+  .voice-row-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+}
+
+@media (max-width: 520px) {
+  .voice-rack {
+    padding: 16px 18px;
+  }
+
+  .voice-rack-header {
+    align-items: center;
+  }
+
+  .voice-list {
+    max-height: 560px;
+  }
+}

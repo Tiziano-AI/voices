@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "voices",
+  "version": "0.2.0",
+  "description": "Create reusable voices, audition speech and keep exact performances on your Apple Silicon Mac with your own local Voices CLI and models.",
+  "author": { "name": "Tiziano AI", "url": "https://github.com/Tiziano-AI" },
+  "homepage": "https://github.com/Tiziano-AI/voices",
+  "repository": "https://github.com/Tiziano-AI/voices",
+  "license": "MIT",
+  "keywords": ["speech", "voice", "tts", "local", "apple-silicon", "mlx"],
+  "extensions": {
+    "com.openai": {
+      "requires_local_executor": true,
+      "interface": {
+        "displayName": "Voices",
+        "shortDescription": "Your on-device voice studio",
+        "longDescription": "Design reusable reference voices, review recordings, audition and compare lines, and save the exact performance you selected as WAV with provenance. Requires an Apple Silicon Mac, a separately installed Voices CLI and your own Qwen/MLX model snapshots. Check the selected models' disk and unified-memory requirements; this project has not qualified a minimum-memory configuration. Model terms apply separately. This skill-only plugin includes no cloud service, account, model weights, CLI installer, hooks or MCP server. Installing it starts no inference or recording. Disabling or removing it preserves your CLI, model cache, voice library and outputs and does not stop an already-running studio.",
+        "developerName": "Tiziano AI",
+        "category": "Productivity",
+        "websiteURL": "https://github.com/Tiziano-AI/voices",
+        "composerIcon": "./skills/voices-local-studio/assets/voices.svg",
+        "logo": "./skills/voices-local-studio/assets/voices.svg",
+        "defaultPrompt": [
+          "Use Voices to inspect my local studio and find a suitable saved narrator.",
+          "Use Voices to create an original voice and save a speech performance I choose."
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+interface:
+  display_name: "Voices Local Studio"
+  short_description: "Operate voices, speech, transcription and word timing"
+  icon_small: "./assets/voices.svg"
+  icon_large: "./assets/voices.svg"
+  brand_color: "#0F766E"
+  default_prompt: "Use $voices-local-studio to operate the installed voices CLI for speech, voice creation/review, audio-only transcription or supplied-text alignment, preserving operator intent and recognition versus timing boundaries."
+
+policy:
+  allow_implicit_invocation: true

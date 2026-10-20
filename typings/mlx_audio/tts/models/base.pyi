@@ -1,0 +1,2 @@
+class GenerationResult:
+    audio: object

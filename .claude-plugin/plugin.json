@@ -1,0 +1,10 @@
+{
+  "name": "voices",
+  "version": "0.2.0",
+  "description": "Create reusable voices, audition speech and keep exact performances on your Apple Silicon Mac with your own local Voices CLI and models.",
+  "author": { "name": "Tiziano AI", "url": "https://github.com/Tiziano-AI" },
+  "homepage": "https://github.com/Tiziano-AI/voices",
+  "repository": "https://github.com/Tiziano-AI/voices",
+  "license": "MIT",
+  "keywords": ["speech", "voice", "tts", "local", "apple-silicon", "mlx"]
+}

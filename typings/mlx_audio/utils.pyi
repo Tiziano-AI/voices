@@ -1,0 +1,3 @@
+from pathlib import Path
+
+def get_model_path(model_id: str) -> Path: ...

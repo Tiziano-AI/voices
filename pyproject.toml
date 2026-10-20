@@ -1,0 +1,75 @@
+[project]
+name = "voices"
+version = "0.2.0"
+description = "Local MLX voice library CLI using Qwen3-TTS"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Tiziano Contorno", email = "57402651+Vanalio@users.noreply.github.com" }
+]
+requires-python = ">=3.14.7,<3.15"
+dependencies = [
+  "mlx-audio>=0.5.1",
+  "mlx>=0.32.2",
+  "transformers>=5.16.1",
+  "typer>=0.27.2",
+  "rich>=15.0.0",
+  "numpy>=2.5.2",
+  "pydantic>=2.13.5",
+  "fastapi>=0.141.1",
+  "starlette>=1.6.0",
+  "httpx>=0.28.1",
+  "uvicorn>=0.52.4",
+  "python-multipart>=0.0.32",
+]
+
+[project.scripts]
+voices = "voices.cli_entrypoint:main"
+
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel.force-include]
+"web/dist" = "voices/web_dist"
+"NOTICE.md" = "voices/NOTICE.md"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src", "pyproject.toml", "README.md", "LICENSE", "NOTICE.md"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"web/dist" = "web/dist"
+
+[tool.pytest.ini_options]
+pythonpath = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+venvPath = "."
+venv = ".venv"
+include = ["src", "devtools"]
+exclude = ["tests", "examples", ".venv"]
+stubPath = "typings"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = false
+reportUnknownArgumentType = "error"
+reportUnknownLambdaType = "error"
+reportUnknownMemberType = "error"
+reportUnknownParameterType = "error"
+reportUnknownVariableType = "error"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.10",
+    "pytest>=9.1.1",
+    "ruff>=0.16.6",
+    "httpx2>=2.12.0",
+]

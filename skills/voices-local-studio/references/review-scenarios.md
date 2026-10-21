@@ -52,7 +52,7 @@ Reject if: the answer relies on hosted upstream capability rather than local pro
 
 ## External consumer
 
-Prompt: "Use Voices from this Walkthrough checkout to render this line."
+Prompt: "Use Voices from this video project's checkout to render this line."
 
 Expected behavior: resolve the installed canonical `voices`, inspect doctor and
 use that CLI with explicit output paths; do not let the task cwd select a private

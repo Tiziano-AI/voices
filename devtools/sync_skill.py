@@ -42,6 +42,7 @@ REQUIRED_FILES = (
     "basedpyrightconfig.json",
     "agents/openai.yaml",
     "assets/voices.svg",
+    "assets/voices.png",
     "references/local-product-contract.md",
     "references/operator-recipes.md",
     "references/workflow-recipes.md",
@@ -63,8 +64,8 @@ REQUIRED_METADATA = {
         "default_prompt",
     ): REQUIRED_DEFAULT_PROMPT,
     ("interface", "icon_small"): "./assets/voices.svg",
-    ("interface", "icon_large"): "./assets/voices.svg",
-    ("interface", "brand_color"): "#0F766E",
+    ("interface", "icon_large"): "./assets/voices.png",
+    ("interface", "brand_color"): "#953D4E",
     ("policy", "allow_implicit_invocation"): "true",
 }
 

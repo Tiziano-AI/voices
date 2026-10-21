@@ -1,4 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="16" fill="#0F766E"/>
-  <path d="M16 28v8m8-16v24m8-32v40m8-32v24m8-16v8" stroke="#F0FDFA" stroke-width="5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <title>Voices</title>
+  <desc>Editable vector artwork for the Tiziano AI plugin family. The adjacent PNG is rendered from this source at 512 by 512 pixels.</desc>
+  <rect width="128" height="128" rx="28" fill="#953D4E"/>
+  <g transform="translate(8.96 8.96) scale(.86)">
+    <path d="M56 24c0-4.418 3.582-8 8-8s8 3.582 8 8v80c0 4.418-3.582 8-8 8s-8-3.582-8-8V24zM29 42c0-4.418 3.582-8 8-8s8 3.582 8 8v44c0 4.418-3.582 8-8 8s-8-3.582-8-8V42zm54 0c0-4.418 3.582-8 8-8s8 3.582 8 8v44c0 4.418-3.582 8-8 8s-8-3.582-8-8V42z" fill="#F8F0DE"/>
+    <path d="M10 58a8 8 0 0 1 16 0v12a8 8 0 0 1-16 0V58zm92 0a8 8 0 0 1 16 0v12a8 8 0 0 1-16 0V58z" fill="#F0B06E"/>
+  </g>
 </svg>

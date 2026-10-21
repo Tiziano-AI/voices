@@ -4,7 +4,7 @@
 
 `voices` is a local-first Apple Silicon voice studio for creating reusable reference voices, hearing real lines immediately, comparing options side by side, and exporting final speech on-device.
 
-The durable library under `~/.voices` is the product memory that makes this loop repeatable. It is not the headline promise.
+The library under `~/.voices` keeps reviewed references available for later work.
 
 The canonical operator loop is:
 

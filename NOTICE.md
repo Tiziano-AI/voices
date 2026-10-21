@@ -1,8 +1,8 @@
 # Voices distribution notices
 
 Original Voices code, documentation, prompt-workbench scripts and the geometric
-waveform icon in `skills/voices-local-studio/assets/voices.svg` are MIT licensed;
-see `LICENSE`. The skill-only plugin contains no third-party executable code,
+waveform icon (SVG source and PNG logo in `skills/voices-local-studio/assets/`)
+are MIT licensed; see `LICENSE`. The skill-only plugin contains no third-party executable code,
 model weights, recordings, generated audio or hosted-service access.
 
 The separately installed Python runtime depends on third-party packages under

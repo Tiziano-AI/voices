@@ -1,6 +1,6 @@
 # Record and clone workflow
 
-## Product law
+## Saved result
 
 - `record` is the easiest ingress into the clone workflow
 - a successful record flow ends with a saved clone voice in the library
@@ -23,7 +23,7 @@ Use `free` record when:
 - the clip does not fit a fixed script
 - manual stop is part of the desired capture flow
 
-## Transcript review doctrine
+## Transcript review
 
 For both imported and recorded clone flows:
 
@@ -36,13 +36,13 @@ For both imported and recorded clone flows:
 - in the browser, a failed transcript review retains the captured take for explicit retry or download; do not ask the operator to record again unless they choose to reset
 - resetting or closing the recording panel discards an unsaved take; download it first when the operator wants to keep it
 
-## Review-step law
+## Playback before approval
 
 - CLI review must expose playback as an explicit action, not as an off-path workaround
 - UI review must frame playback as a visible review step, not as an unlabeled audio control
 - if playback is unavailable, treat transcript approval as degraded and say so explicitly
 
-## Language doctrine
+## Language choice
 
 - language choice happens before transcription and save
 - keep the public product surface aligned with the supported Voices language set

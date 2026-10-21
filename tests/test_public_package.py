@@ -13,14 +13,14 @@ import pytest
 from devtools import export_public
 
 
-def commit_fixture(repo: Path, files: dict[str, str]) -> None:
+def commit_fixture(repo: Path, files: dict[str, str | bytes]) -> None:
     """Make one private local commit without relying on user Git configuration."""
     repo.mkdir()
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
-    for name, text in files.items():
+    for name, content in files.items():
         path = repo / name
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
+        path.write_bytes(content.encode("utf-8") if isinstance(content, str) else content)
     subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
     subprocess.run(
         [
@@ -42,21 +42,25 @@ def commit_fixture(repo: Path, files: dict[str, str]) -> None:
 def test_export_reads_only_inventoried_committed_regular_blobs(tmp_path: Path) -> None:
     """Dirty files, history, secrets and links cannot hitchhike into a source ZIP."""
     repo = tmp_path / "repo"
+    logo_path = "skills/voices-local-studio/assets/voices.png"
+    logo_bytes = b"\x89PNG\r\n\x1a\ncommitted-logo"
     commit_fixture(
         repo,
         {
-            export_public.MANIFEST: "README.md\nsrc/tool.py\n",
+            export_public.MANIFEST: f"README.md\nsrc/tool.py\n{logo_path}\n",
             "README.md": "accepted\n",
             "src/tool.py": "print('source')\n",
+            logo_path: logo_bytes,
             "private.txt": "not admitted\n",
             "docs/releases/private.md": "historical local report\n",
         },
     )
     (repo / "README.md").write_text("dirty working copy\n")
+    (repo / logo_path).write_bytes(b"dirty working logo")
     (repo / "untracked.wav").write_bytes(b"private audio")
     revision, members = export_public.collect_export(repo, "source")
     assert len(revision) == 40
-    assert members == {"README.md": b"accepted\n", "src/tool.py": b"print('source')\n"}
+    assert members == {"README.md": b"accepted\n", "src/tool.py": b"print('source')\n", logo_path: logo_bytes}
     first, second = tmp_path / "first.zip", tmp_path / "second.zip"
     for output in (first, second):
         export_public.write_archive(output, members)
@@ -81,6 +85,8 @@ def test_export_reads_only_inventoried_committed_regular_blobs(tmp_path: Path) -
         "clip.wav",
         "model.safetensors",
         "photo.png",
+        "skills/voices-local-studio/assets/unreviewed.png",
+        "skills/another-skill/assets/voices.png",
         "unreviewed.svg",
     ],
 )
@@ -122,14 +128,16 @@ def test_working_inventory_is_closed_and_payload_has_no_external_local_links() -
     root = export_public.REPO_ROOT
     inventory = export_public.admitted_paths((root / export_public.MANIFEST).read_text())
     assert set(export_public.PLUGIN_FILES).issubset(inventory)
+    assert export_public.REVIEWED_VISUAL_ASSETS.issubset(inventory)
     assert export_public.MANIFEST in inventory
     for name in inventory:
         assert (root / name).is_file() and not (root / name).is_symlink(), name
     payload = [name for name in inventory if export_public.plugin_path(name)]
     for name in payload:
-        text = (root / name).read_text()
-        assert "/Users/" not in text, name
-        if name.endswith(".md") and name.startswith(export_public.SKILL_PREFIX):
+        content = (root / name).read_bytes()
+        assert b"/Users/" not in content, name
+        if name.endswith(".md"):
+            text = content.decode("utf-8")
             for target in re.findall(r"\]\(([^)]+)\)", text):
                 if "://" in target or target.startswith("#"):
                     continue
@@ -163,6 +171,7 @@ def test_native_manifests_discover_one_skill_without_automatic_effects() -> None
     assert portable["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
     assert portable["name"] == "voices"
     assert portable["license"] == "MIT"
+    assert claude["icon"] == "./skills/voices-local-studio/assets/voices.png"
     assert sorted(path.name for path in (root / "skills").iterdir()) == ["voices-local-studio"]
     assert not any(key in portable or key in claude for key in ("hooks", "mcpServers", "settings", "commands"))
     extension = portable["extensions"]["com.openai"]

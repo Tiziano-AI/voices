@@ -33,7 +33,7 @@ Use upstream examples for patterns, not as proof of local API.
 
 - Hosted Voice Design docs define strong writing principles for `voice_prompt`.
 - Hosted voice-cloning docs define audio quality requirements.
-- Hosted synthesis docs define `instructions` control on supported instruct models and say instruction text is Chinese/English only.
+- Hosted synthesis docs describe model-specific instruction controls and language limits; they do not add a local synthesis flag.
 
 These are references, not local product rules.
 
@@ -47,6 +47,6 @@ These are references, not local product rules.
 Primary sources:
 
 - [Qwen3-TTS GitHub README](https://github.com/QwenLM/Qwen3-TTS)
-- [Alibaba Voice Design docs](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-design)
-- [Alibaba voice cloning docs](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-cloning)
-- [Alibaba speech synthesis docs](https://www.alibabacloud.com/help/en/model-studio/qwen-tts)
+- [Alibaba Voice Design docs](https://www.alibabacloud.com/help/en/model-studio/voice-design-user-guide)
+- [Alibaba voice cloning docs](https://www.alibabacloud.com/help/en/model-studio/voice-cloning-user-guide)
+- [Alibaba speech synthesis docs](https://www.alibabacloud.com/help/en/model-studio/non-realtime-tts-user-guide)

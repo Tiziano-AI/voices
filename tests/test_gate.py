@@ -26,8 +26,8 @@ def write_minimal_skill(root: Path) -> None:
         f'  short_description: "{sync_skill.REQUIRED_SHORT_DESCRIPTION}"\n'
         f'  default_prompt: "{sync_skill.REQUIRED_DEFAULT_PROMPT}"\n'
         '  icon_small: "./assets/voices.svg"\n'
-        '  icon_large: "./assets/voices.svg"\n'
-        '  brand_color: "#0F766E"\n'
+        '  icon_large: "./assets/voices.png"\n'
+        '  brand_color: "#953D4E"\n'
         "policy:\n"
         "  allow_implicit_invocation: true\n",
         encoding="utf-8",

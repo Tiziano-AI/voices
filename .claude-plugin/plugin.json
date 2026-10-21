@@ -1,6 +1,7 @@
 {
   "name": "voices",
-  "version": "0.2.0",
+  "version": "0.2.1",
+  "icon": "./skills/voices-local-studio/assets/voices.png",
   "description": "Create reusable voices, audition speech and keep exact performances on your Apple Silicon Mac with your own local Voices CLI and models.",
   "author": { "name": "Tiziano AI", "url": "https://github.com/Tiziano-AI" },
   "homepage": "https://github.com/Tiziano-AI/voices",

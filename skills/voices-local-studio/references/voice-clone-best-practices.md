@@ -1,37 +1,34 @@
 # Voice clone best practices
 
-Primary source:
+## Prepare the reference
 
-- [Alibaba voice cloning docs](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-cloning)
+Use only a recording the operator has permission to clone. Choose one speaker
+with clear, natural speech, little reverberation and no music or overlapping
+voices. Avoid singing or a delivery so extreme that it would be unwanted in
+later lines. Listen before spending effort on the transcript.
 
-## Source-audio requirements
+Voices imports local formats the installed FFmpeg can decode. Imported files
+have no separate extension or duration allowlist; free recording enforces its
+minimum before transcript review. Use `record plan` to inspect that minimum.
 
-Use these as the local preparation checklist:
-
-- supported source formats: any local file that the installed `ffmpeg` can decode
-- preferred duration: enough clean speech to represent the target voice without forcing the operator through avoidable noise
-- product duration limits: free recording enforces the repo minimum before transcript review; imported clone files do not have a separate extension or duration allowlist
-- sample rate: at least 24 kHz
-- clear speech segment: at least 3 seconds of continuous clear speech
-- no background music
-- no background noise
-- no overlapping speakers
-- no singing
+Clean source quality matters more than meeting a hosted service's numeric
+limits. [Alibaba's recording guidance](https://www.alibabacloud.com/help/en/model-studio/voice-cloning-user-guide)
+offers useful preparation advice, but its upload, duration and sample-rate
+requirements belong to that hosted API, not this local product. Prefer an
+original recording over an upsampled or heavily compressed copy.
 
 ## Transcript quality
 
-Treat transcript accuracy as part of the clone quality budget.
-
 Use a transcript that is:
 
-- exact or near-exact
+- faithful to the words actually spoken
 - in the same language as the source clip
 - cleaned of obvious punctuation noise only when it improves alignment
 - not paraphrased
 
 If the transcript is materially wrong, the clone path becomes less reliable even when the audio is good.
 
-## Reject or quarantine weak reference clips
+## Replace weak reference clips
 
 Advise against cloning when the clip is:
 
@@ -52,10 +49,8 @@ In the local product:
 - the cleaned reference becomes `reference.wav`
 - the transcript becomes `reference.txt`
 
-That means the clone path depends on both:
-
-- acoustic cleanliness
-- transcript fidelity
+Check the draft against the normalized WAV and correct its `transcript` field
+before `clone save`. Saving does not add a second transcript-approval prompt.
 
 ## Design vs clone decision rule
 
@@ -73,8 +68,4 @@ Prefer `clone` when:
 - the source audio is clean
 - speaker identity matters more than invented style
 
-Prefer `design` when:
-
-- you want a reusable synthetic character voice
-- you need consistency across many lines
-- you want the designed persona to become the saved reusable reference immediately without a second clone step
+`design` saves the synthetic reference directly; it needs no second clone step.

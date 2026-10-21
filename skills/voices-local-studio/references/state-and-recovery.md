@@ -1,10 +1,10 @@
-# State And Recovery
+# State and recovery
 
-## Recovery posture
+## Check the selected installation
 - Resolve the installed `voices` command and inspect doctor identity first; source docs explain behavior but do not prove the selected installation.
 - Use the standard shared model cache with immutable revisions. If installation/cache selection differs from the canonical contract, report the discrepancy; do not provision a private source/Python/venv, duplicate cache or fallback.
 
-## Bundled UI lifecycle law
+## Studio lifecycle
 
 - The bundled browser UI is launched by `voices ui` for one selected library and loopback host/port.
 - `--host` accepts only `127.0.0.1`, `localhost`, or `::1`.
@@ -13,7 +13,7 @@
 
 ## Runtime-state contract
 
-- `voices doctor` is the readiness command; `voices status` is not the readiness surface.
+- `voices doctor` checks readiness without loading a model.
 - Runtime UI state is process-owned by the terminal session running `voices ui`.
 - Unsaved browser previews and compare clips are temporary, cleaned up when the edge stops. **Save preview**, board **Save clip**, **Save original clip** and **Save compared clips** retain those exact WAV bytes and generation-time provenance. A token exports once; retry reuses its persisted pair. An expired token fails without generating replacement audio. Partial compare saves retain successful downloads.
 - A board card is one performance, not a voice slot. Freshness compares exact text, effective language, reference WAV/transcript and model against the latest observed inputs. Input edits retain old clips and links; returning to the same inputs restores freshness. **Save original clip** explicitly saves noncurrent audio. Remove/Clear wait for its save to finish. Coverage separates distinct ready, pending, failed and unattempted voices; retry failed cards explicitly.
@@ -22,7 +22,7 @@
 - Closing or resetting during microphone permission retires any stream granted afterward; it cannot dismiss the browser or operating-system permission prompt.
 - Saved voices and rendered outputs remain in `~/.voices` and `./outputs`.
 
-## Recovery rules
+## Recover the work
 
 - If `voices ui` reports a port conflict, choose a free loopback port or stop the terminal process that owns the port.
 - If the browser bundle is missing, report the selected installation and route repair to repository materialization guidance; do not start a second implementation.

@@ -42,18 +42,13 @@ Use `record` when:
 
 For `record` and transcript-assisted clone work, capture or upload audio, play the take, inspect the STT draft, accept/retry/edit/replay, and save only after the operator approves audio and transcript. Use `clone review` plus `clone save` for imported audio and `record plan` before interactive microphone capture.
 
-Use `design` directly when:
-
-- you want a consistent invented character voice across many lines
-- you need the reusable saved reference voice to live in the library immediately
-
 ## Choose an existing voice vs design a new one
 
 Prefer an existing saved voice when:
 
 - it already matches the task’s purpose, pace, and authority or warmth
 - the user did not ask for a new persona
-- speed matters more than expanding the library
+- the task needs speech rather than another library asset
 
 When creation is part of the requested outcome, design a new voice when:
 
@@ -65,11 +60,11 @@ Those fit problems can justify proposing creation; they do not by themselves aut
 
 ## Task-fit voice heuristics
 
-Task-fit defaults: product summaries need calm authority, measured pace, clean diction, and no sales voice; technical demos need crisp articulation and medium confident energy; ops/compliance reads need restraint and precision; promos can lift brighter but must avoid caricature.
-
-Fiction, character, or heavily stylized read:
-
-- use an intentionally close saved voice for a stylized read; design a new one when the request includes creating that character voice
+Useful starting points: calm authority and measured pace for product summaries;
+crisp articulation and medium energy for technical demos; restraint and precision
+for operational reads; brighter delivery without caricature for promotional work.
+Let the actual text and intended listener decide. For fiction, choose a close
+saved voice or design a new one when character creation is part of the request.
 
 ## Use `say` vs `render`
 
@@ -81,10 +76,8 @@ Use `say` when:
 
 Use `render` when:
 
-- you want a saved artifact
-- you need a persisted output with provenance
-- you want the output sidecar metadata
-- you want something you can point to after generation
+- you need a WAV file to keep or hand back
+- generation-time provenance in the JSON sidecar matters
 
 ## Use the UI
 
@@ -99,7 +92,7 @@ Use the UI when:
 
 The UI is helpful for browse-and-compare loops. The CLI remains canonical for controlled generation and scripting.
 
-UI lifecycle discipline:
+Studio lifecycle:
 
 - start with `voices ui` on the desired loopback host and port
 - use the terminal session that launched `voices ui` as the process owner

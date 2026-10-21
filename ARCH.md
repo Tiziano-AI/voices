@@ -15,7 +15,7 @@ The loop creates/imports a reference through `design`, `clone` or `record`, revi
 
 ## Runtime compatibility and source contracts
 
-Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency selections. Historical qualification records are not public release inputs.
+Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency selections.
 
 - External consumers invoke the single installed `voices` CLI. They do not own a second Voices checkout, Python/venv, model cache, provisioner, or fallback. The standard Hugging Face cache is shared; source development remains in this repository.
 - `voices.adapter.model_snapshot` resolves full 40-hex revisions, never mutable `refs/main`. `voices.config` owns pinned Base, VoiceDesign, ASR and ForcedAligner defaults. Render and align permit explicit revisions; transcribe requires one. Design and clone/record STT use configured defaults.
@@ -23,7 +23,7 @@ Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency
 - Base consumes captured bytes and clears the weak upstream ICL cache under that lock; [performance identity](docs/performance-identity.md) owns the capture/decoder/cache contract.
 - `mlx_stt` maps audio-only `STTOutput`; `mlx_align` estimates supplied-text times, not spoken-content verification. Its snapshot loads with `strict=True, model_type="qwen3_forced_aligner"`; config otherwise dispatches to ASR. No tokenizer monkeypatch, separate `mlx-lm`, or parallel MLX path.
 - `voices.runtime_identity.RuntimeIdentity` owns runtime/source provenance. The digest covers installed Python bytes observed before generation, not Git or previously imported bytecode. Package identity covers selected dependencies, not the whole environment. Historical unknowns remain unknown.
-- Typer vendors Click: `cli_entrypoint` handles Typer's actual exception classes, not unrelated standalone Click classes. `cli_json`/`cli_support` separate JSON stdout from diagnostics. HTTPX2 is a development client dependency, distinct from runtime HTTPX; the graph has no `urllib3`.
+- Typer vendors Click: `cli_entrypoint` handles Typer's actual exception classes, not unrelated standalone Click classes. `cli_json`/`cli_support` separate JSON stdout from diagnostics.
 - Native pnpm `packageManager` and `devEngines.runtime` select the web runtime without replacing ambient tools. Basedpyright's Node package belongs to the Python development graph, not the web toolchain.
 - `ffmpeg_audio` owns FFmpeg capture; `useRecorder` owns browser capture. `edge.app` explicitly dispatches synchronous workflow calls through Starlette `run_in_threadpool`; the shared MLX lock still serializes inference.
 - Free CLI capture has one lexical owner, `ffmpeg_audio.free_recording`: cooperative stop, forced retirement when necessary, child collection and pipe closure precede every exit. EOF/interrupt abort only after cleanup; a forced or failed stop never enters review. Guided capture retains `subprocess.run` ownership.

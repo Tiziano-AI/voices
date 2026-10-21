@@ -1,12 +1,19 @@
+<img src="skills/voices-local-studio/assets/voices.png" width="72" height="72" alt="">
+
 # Voices
 
-`voices` is an Apple Silicon voice studio using Qwen3-TTS through MLX. Keep
-reference voices under `~/.voices`, audition and compare lines, and export
-speech from the CLI or bundled browser studio.
+Create reusable voices, try real lines, and keep the performance you like.
+Voices runs Qwen3-TTS on your Apple Silicon Mac through MLX, with a browser
+studio for listening and comparison and a CLI for scripting.
 
-Use `design` for a synthetic voice, `clone` to import a recording, or `record`
-for microphone capture. The CLI is the automation contract; `voices ui` guides
-the same workflows in a browser.
+Design a synthetic voice or import a recording you have permission to use.
+Saved voices are reference audio and transcripts, not trained models. Speech
+exports are WAV files with JSON provenance; the studio can save the exact
+preview you heard rather than generating it again.
+
+[Setup](#setup) · [First saved result](#first-saved-result) ·
+[Commands](#command-reference) · [Agent plugin](PLUGIN.md) ·
+[Development](devtools/README.md)
 
 ## Requirements
 
@@ -15,6 +22,11 @@ the same workflows in a browser.
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - [pnpm](https://pnpm.io/installation) and Node.js for source builds; `web/package.json` selects their versions
 - FFmpeg on `PATH` for audio import/review, recording, `transcribe` and `align`
+
+Model snapshots also need disk space and free unified memory. Check the
+selected model's requirements; this project has not qualified a minimum-memory
+configuration. Inference stays local, with no cloud fallback. Missing models
+may download from Hugging Face when first used; their licenses apply separately.
 
 ## Setup
 
@@ -33,22 +45,36 @@ Build the web bundle **before** Python sync: Hatch includes it during setup.
 A prebuilt wheel includes the UI and needs neither Node nor pnpm. See
 [installation and removal](devtools/README.md#repository-and-global-command).
 
-Models resolve full immutable revisions in the shared standard Hugging Face cache: VoiceDesign for `design`, Base for `say`/`render`, ASR for transcript review and `transcribe`, and ForcedAligner for `align`. Missing snapshots may download on first authorized use; runtime never selects mutable `refs/main`.
-
-After the UI build, `uv build` packages wheel and sdist. Wheels use
-`voices/web_dist`; editable checkouts use `web/dist`. Launch never builds.
-
-`uv run voices` uses this checkout; `uv sync` never updates a global CLI.
+`uv run voices` uses this checkout. A separately installed global `voices`
+command does not change when you edit source or run `uv sync`; see
+[global installation](devtools/README.md#repository-and-global-command).
+Models use pinned, immutable revisions in the standard shared Hugging Face cache.
 
 ## First saved result
 
-Run `uv run voices --json doctor`, then `uv run voices ui`. Choose **Design**, create a synthetic voice, audition a line, then **Save preview** to keep that exact WAV and its JSON sidecar. CLI `render` generates a new performance:
+Start by checking setup, then open the studio:
+
+```bash
+uv run voices --json doctor
+uv run voices ui
+```
+
+Doctor checks readiness without loading a model. In the studio:
+
+1. Choose **Design** and describe an original voice.
+2. Save the voice, enter a line you actually want to use, and preview it.
+3. Listen, then choose **Save preview** to keep that exact WAV and its JSON sidecar.
+
+Stop the studio with Ctrl-C in its terminal. Unsaved previews are temporary;
+saved voices live under `~/.voices` and exports under `./outputs` by default.
+
+For the same path in the terminal, preview the proposed voice with `--dry-run`,
+then create it and render a line. These generation commands may download models:
 
 ```bash
 uv run voices design --id studio_narrator --name "Studio Narrator" --language English \
   --instruct "A calm adult narrator, clear diction, natural pacing, no theatrical emphasis." \
   --text "A small idea becomes useful when someone can put it to work." --dry-run
-# These next commands generate audio and may download the pinned model snapshots.
 uv run voices design --id studio_narrator --name "Studio Narrator" --language English \
   --instruct "A calm adult narrator, clear diction, natural pacing, no theatrical emphasis." \
   --text "A small idea becomes useful when someone can put it to work."
@@ -56,15 +82,9 @@ uv run voices --json render studio_narrator "This is a line worth keeping."
 uv run voices --json outputs list --voice studio_narrator
 ```
 
-Use only recordings you have permission to use for cloning. Nothing captures a microphone or starts model inference on install. Stop the studio with Ctrl-C in its terminal. Removing the CLI or its agent guidance does not remove your library, renders, model cache or saved review files; those are separate user assets.
-
-## Codex App local actions
-
-`.codex/environments/environment.toml` supplies optional top-bar actions:
-`Setup`, `Run Studio`, `Doctor`, `Build UI`, `Gate`, `Python Tests`, `Web Checks`
-and `List Voices`. Setup follows the build-before-sync order above. These are
-conveniences over the CLI, not a separate API. Parameterized, destructive,
-audio-device and model-heavy operations remain explicit CLI commands.
+CLI `render` generates a new performance; it does not recover a studio preview.
+Installation starts no inference or microphone capture. Removing the CLI or
+plugin preserves your voice library, renders, reviews and model cache.
 
 ## Agent plugin
 
@@ -72,7 +92,7 @@ The [Voices plugin](PLUGIN.md) packages `skills/voices-local-studio` for Agent
 Plugins and Claude Code. Install CLI/models independently; the plugin runs no
 setup, hook, downloader or MCP server. Removal preserves CLI, cache and audio.
 
-## Canonical command surface
+## Command reference
 
 ### `ui`
 
@@ -83,10 +103,10 @@ uv run voices ui
 uv run voices ui --library ~/.voices --port 9901 --no-open
 ```
 
-The studio shares CLI workflows and storage, binds only to loopback, validates
-Host on every route and rejects cross-origin mutations against the actual
-listener port. Forwarded headers are not trusted. `::1` uses a bracketed IPv6 URL. Missing
-bundle assets produce a setup error; launch never builds them.
+The studio shares CLI workflows and storage and accepts only loopback hosts
+(`127.0.0.1`, `localhost` or `::1`). Stop it in the terminal that launched it.
+If bundle assets are missing, rebuild the UI or reinstall the wheel; launch
+does not build them. Request admission is described in [architecture](ARCH.md#local-http-contracts).
 
 ### JSON mode
 
@@ -173,7 +193,12 @@ uv run voices --json clone review \
   --transcript "Esatta trascrizione dell'audio." \
   --language Italian \
   --review-out ./matteo-review.json
+```
 
+Listen to the normalized WAV and check the review JSON's `transcript` against
+it. Correct the draft if needed, then save the approved reference:
+
+```bash
 uv run voices --json clone save \
   --review ./matteo-review.json \
   --id matteo \
@@ -181,9 +206,8 @@ uv run voices --json clone save \
 ```
 
 - `ffmpeg` must be available on `PATH`
-- `clone review` routes imported audio through the same transcript-review owner used by `record` and the browser studio
 - `--transcript` seeds the review draft when you already have a correct transcript; when omitted, local STT creates the draft
-- the review file stores the approved transcript draft plus a normalized WAV sibling so `clone save` has one explicit persistence input
+- `clone review` writes the draft and a normalized WAV sibling; `clone save` does not add another transcript-approval prompt
 - `clone save --overwrite` replaces an existing saved voice at the same id
 
 ### `record`
@@ -202,7 +226,6 @@ uv run voices --json record plan --mode guided --language English
 - `free` mode records until you stop it and enforces a minimum usable duration
 - both modes let you listen to the captured take, run STT, and show the actual transcript so you can `accept`, `retry`, `edit`, or `play` before save
 - in the browser, a failed transcript review keeps the captured take for **Retry review** or **Download take**, without reopening the microphone; Reset or closing the recording panel discards that unsaved browser take
-- closing or resetting while microphone permission is pending retires any late-granted stream without starting a recording; already-active tracks are stopped on close
 - `--name` must be non-empty after trimming; when `--id` is omitted and `--overwrite` is set, `record` overwrites the slug derived from the approved name instead of creating a suffixed new id
 - `ffmpeg` must be available on `PATH`
 - `record plan` reports the guided script, target duration, free-mode minimum, and stop rule without using the microphone
@@ -216,7 +239,7 @@ uv run voices say "We proceed at dawn." --voice noir_narrator
 ```
 
 - `--voice` is optional; when omitted, `say` uses the most recently created saved voice
-- when the library is empty, `say` points you at `design`, `clone`, or `record` as the canonical first-success creation paths
+- an empty library needs a reference from `design`, `clone review`/`clone save`, or `record` before speech can be generated
 - text must be non-empty after trimming
 - `say` is ephemeral playback and does not create persisted render artifacts
 
@@ -231,8 +254,6 @@ uv run voices render noir_narrator --text-file ./line.txt --play
 
 - `--text-file` reads render text from a file instead of a positional argument
 - `--out-dir` chooses the output root; the default is `./outputs`
-- concurrent renders serialize basename reservation per voice so collisions become `-2`, `-3`, and so on instead of clobbering a sibling export
-- the output root and per-voice directories must be real paths; served artifacts stay under that configured root, and symlinked output paths are rejected
 - `--play` plays the rendered WAV after saving it
 - `--model-revision` selects a full 40-hex Base revision; the default is `a6eb4f68e4b056f1215157bb696209bc82a6db48`
 - new schema-v2 sidecars retain `base_model_revision` and generation-time `runtime` identity; older sidecars remain unchanged, with missing identity unknown rather than reconstructed
@@ -261,13 +282,17 @@ uv run voices resolve noir
 uv run voices show noir_narrator
 uv run voices outputs list --voice noir_narrator
 uv run voices outputs show noir_narrator 20260408T120000Z__line.json
-uv run voices delete noir_narrator --yes
+```
+
+Preview a deletion before confirming it:
+
+```bash
 uv run voices delete noir_narrator --dry-run
+uv run voices delete noir_narrator --yes
 ```
 
 - `list` shows `id`, `lang`, `source`, and wrapped `desc`
 - `list` filters by `--language`, `--source`, `--query`, and `--limit`
-- when the library is empty, `list` points you at `design`, `clone review`, `clone save`, and `record` as the canonical first-success creation paths
 - `resolve` returns one exact or unambiguous saved `voice_id`
 - `show` prints the full persisted metadata plus derived `description` and `source_kind`
 - `outputs list` reads persisted render sidecars under `./outputs/<voice_id>/`
@@ -277,33 +302,28 @@ uv run voices delete noir_narrator --dry-run
 
 ## Bundled browser studio
 
-The empty-library launchpad guides voice creation; the studio supports audition,
-comparison, design, clone/record review and export.
+The studio opens with a creation path when your library is empty. With saved
+voices, choose a reference, enter a line and audition it; use the Audition Board
+to compare the same line across voices and retain individual performances.
 
-The workbench combines a voice rail, preview controls, Audition Board,
-transport/inspector and creation sheet. Palettes change appearance, not behavior.
+- **Design**, **Clone file** and **Record live** share the CLI's voice library.
+- **Save preview**, **Save clip** and **Save compared clips** keep the WAVs you
+  heard and their original provenance. Retrying a save reuses its output pair;
+  an expired preview fails rather than being synthesized again.
+- Editing inputs keeps earlier clips and links. **Save original clip** explicitly
+  retains a performance that no longer matches the current inputs.
+- **Render export** without a preview generates a new performance.
+- Unsaved previews, compare clips and board positions last only for the session.
 
-Browser integrity and playback:
+If transcript review fails after recording, **Retry review** uses the same take
+and **Download take** keeps its bytes. Resetting or closing the panel discards
+that unsaved take. Closing also stops active microphone tracks; it cannot dismiss
+a pending browser or operating-system permission prompt.
 
-- actual saved-library corruption shows the dedicated library integrity blocker
-- other bootstrap or local-edge failures show a retryable studio blocker instead of pretending the library itself is broken
-- closing the creation sheet, switching creation paths, or retrying a clone or record review abandons the in-flight browser request instead of letting a late response mutate the current studio state
-- design and batch design check cancellation before each save; closing after that cutoff does not undo persistence, and earlier batch saves remain
-- changing the selected voice clears stale detail immediately until the fresh detail payload arrives
-- saved-reference audition failures surface as visible studio errors
-- browser playback is owned by one audio session; `playing` is shown only after the browser accepts playback, and browser denial is shown as blocked/error state
-- cards retain each performance; freshness follows exact inputs and the latest observed library, not names or ordering
-- generation covers unattempted voices; failed cards have explicit retry, and old clips/links survive input changes
-
-Aborting a request does not prove its save was canceled: inspect saved state before retrying. **Save preview**, **Save clip**, **Save original clip** and **Save compared clips** keep exact auditioned bytes/provenance and reuse one output pair. Expired tokens fail without resynthesis. CLI `render` and **Render export** without a preview create new audio. [Performance identity](docs/performance-identity.md) explains freshness, original-clip saves and input conflicts.
-
-Storage stays shared with the CLI:
-
-- saved voices still live only under `~/.voices`
-- previews, compare clips, and Audition Board positions are session-only browser state
-- saved exports still write WAV plus schema v2 JSON into `./outputs`
-- prompt-pack and audio uploads are bounded by the local upload limit
-- oversized browser multipart uploads are rejected before form parsing when the request declares a too-large `Content-Length`
+Closing a panel or aborting a request does not undo a save the server already
+accepted. Inspect the library before retrying an interrupted save. See
+[performance identity](docs/performance-identity.md) for freshness, input conflicts
+and export behavior, and [architecture](ARCH.md) for storage and HTTP contracts.
 
 ## Saved assets
 
@@ -332,10 +352,21 @@ The local STT runtime can support a broader set of languages, but the product in
 
 ## Prompt packs
 
-`examples/prompts/basic.jsonl` is a neutral two-voice starter pack. Preview its
-output paths with `design-batch --dry-run` before generating audio.
+`examples/prompts/basic.jsonl` is a neutral two-voice starter pack. Preview the
+proposed voices with `design-batch --dry-run` before generating audio.
 
-## Verification
+## Development
+
+[Architecture](ARCH.md) describes the implementation boundaries and persisted
+formats; [product scope](VISION.md) records the intended workflow and non-goals.
+The [development guide](devtools/README.md) covers global installation, packaging,
+model-cache recovery and opt-in real-model qualification.
+
+`.codex/environments/environment.toml` supplies optional top-bar actions:
+`Setup`, `Run Studio`, `Doctor`, `Build UI`, `Gate`, `Python Tests`, `Web Checks`
+and `List Voices`. Setup follows the build-before-sync order above. These are
+CLI conveniences, not a separate API; parameterized, destructive, audio-device
+and model-heavy operations remain explicit commands.
 
 Run the canonical gate from repo root:
 
@@ -356,4 +387,5 @@ Original code/docs are [MIT licensed](LICENSE); [notices](NOTICE.md) identify se
 
 Model weights are separate downloads with their own licenses and model cards, selected by immutable revisions in `voices.config`. The source license grants no additional model, recording, voice-identity or likeness rights. Your saved voice library, recordings, reviews and generated audio are not distribution inputs.
 
-Publish only [reviewed source/plugin exports](devtools/README.md#public-source-and-plugin-candidates), not Git history or the working directory.
+For reproducible source or skills-only ZIPs, see
+[distribution archives](devtools/README.md#distribution-archives).

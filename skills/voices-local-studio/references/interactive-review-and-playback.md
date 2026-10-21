@@ -1,11 +1,10 @@
 # Interactive review and playback
 
-## Why this exists
+Listen to the recorded or imported take before accepting its transcript and
+saving it as a reusable voice. Recognition can help draft a transcript, but
+cannot establish how the reference sounds.
 
-Record and clone flows become untrustworthy when transcript approval is blind. The operator must be
-able to hear the actual take before it is accepted as a reusable library voice.
-
-## CLI law
+## Terminal review
 
 For interactive CLI review:
 
@@ -13,7 +12,7 @@ For interactive CLI review:
 2. keep transcript approval and playback in the same loop
 3. never require the operator to leave the command just to hear the take
 
-## UI law
+## Studio review
 
 For bundled UI review:
 
@@ -31,7 +30,7 @@ When the agent is driving `voices record` through an interactive harness:
 4. start the record command only after the operator confirms readiness
 5. after capture, call out the playback option before asking for transcript approval
 
-## Failure posture
+## When review fails
 
 - if STT is weak but playback is good, the operator may still edit the transcript confidently
 - if playback is poor, prefer retry over transcript polishing

@@ -14,6 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "devtools/public-source-files.txt"
 PLUGIN_FILES = frozenset(("plugin.json", ".claude-plugin/plugin.json", "LICENSE", "NOTICE.md", "PLUGIN.md"))
 SKILL_PREFIX = "skills/voices-local-studio/"
+REVIEWED_VISUAL_ASSETS = frozenset((SKILL_PREFIX + "assets/voices.svg", SKILL_PREFIX + "assets/voices.png"))
 SKILL_DEVELOPMENT_FILES = frozenset(("basedpyrightconfig.json", "scripts/check_generated_artifacts.py"))
 FORBIDDEN_PARTS = frozenset(
     (".git", ".tmp", ".cdx-continue", ".venv", "node_modules", "outputs", "storyshots", "test-results", "__pycache__")
@@ -51,9 +52,9 @@ def admitted_paths(text: str) -> list[str]:
             raise ValueError(f"unsafe public source path: {name}")
         if any(part in FORBIDDEN_PARTS for part in path.parts) or name.startswith("docs/releases/"):
             raise ValueError(f"local state/history cannot be exported: {name}")
-        if path.suffix.lower() in MEDIA_SUFFIXES:
+        if path.suffix.lower() in MEDIA_SUFFIXES and name not in REVIEWED_VISUAL_ASSETS:
             raise ValueError(f"media/model assets are not admitted: {name}")
-        if path.suffix.lower() == ".svg" and name != SKILL_PREFIX + "assets/voices.svg":
+        if path.suffix.lower() == ".svg" and name not in REVIEWED_VISUAL_ASSETS:
             raise ValueError(f"unreviewed visual asset: {name}")
     return sorted(paths)
 

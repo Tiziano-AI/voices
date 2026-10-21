@@ -26,7 +26,10 @@ A strong prompt is trait-first: identity, register, pace, energy, timbre, dictio
 
 ## Pattern guidance
 
-Upgrade weak prompts by replacing vague labels with age/register, pace, energy, diction, use case, and a denial such as `not shrill`, `not theatrical`, or `not salesy`. Preserve the repo's literary house style when role archetype, setting, or genre helps, but keep the prose trait-first and avoid named-person imitation.
+Replace vague labels with audible traits: register, pace, energy, diction and
+use case. Add a constraint such as `not shrill`, `not theatrical` or `not salesy`
+when it addresses a likely failure. Role, setting and genre can sharpen a
+character, but keep the description trait-first and avoid named-person imitation.
 
 ## Seed-line design advice
 

@@ -25,6 +25,7 @@ plugin.json
 pyproject.toml
 skills/voices-local-studio/SKILL.md
 skills/voices-local-studio/agents/openai.yaml
+skills/voices-local-studio/assets/voices.png
 skills/voices-local-studio/assets/voices.svg
 skills/voices-local-studio/basedpyrightconfig.json
 skills/voices-local-studio/references/interactive-review-and-playback.md

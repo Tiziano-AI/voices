@@ -1,10 +1,9 @@
 # Voice design best practices
 
-Official Voice Design guidance is stronger than most ad hoc prompting. The local product should inherit those principles.
-
-Primary source:
-
-- [Alibaba Voice Design docs](https://www.alibabacloud.com/help/en/model-studio/qwen-tts-voice-design)
+Describe what the listener should hear, then test it with a line that belongs
+to the intended use. [Alibaba's Voice Design guidance](https://www.alibabacloud.com/help/en/model-studio/voice-design-user-guide)
+provides the description principles below; hosted API limits do not define
+the local CLI's validation.
 
 ## Core principles
 
@@ -18,7 +17,7 @@ Paraphrased from the official guidance:
 
 ## Recommended description dimensions
 
-Use these as the canonical serious-authoring checklist:
+Useful description dimensions:
 
 - gender or vocal identity
 - age band
@@ -70,7 +69,7 @@ Weak prompts often:
 - rely on repetition instead of detail
 - forget to say what the voice is for
 
-## Authoring doctrine
+## Structured authoring
 
 For serious work:
 

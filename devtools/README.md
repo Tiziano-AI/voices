@@ -1,4 +1,4 @@
-# Local materialization and real-runtime qualification
+# Developing Voices
 
 Run from the repository root. Keep operator assets and unrelated installed
 tools intact. Check active consumers before replacing the global command's
@@ -25,9 +25,9 @@ The global `voices` command is a non-editable `uv tool` install of a wheel
 built from a committed revision, so nothing in this checkout reaches it until
 it is reinstalled. Reinstalling is an explicit installation operation, not a
 read-only diagnostic: resolve `command -v voices` and its receipt, check which
-consumers are active (a Python source change moves `runtime.source_sha256`,
-which Walkthrough treats as drift until it reprovisions), and install only
-committed source. Run the recipe from the repository root; the subshell stops
+consumers are active (integrations may pin `runtime.source_sha256` and reject a
+changed runtime), and install only committed source. Run the recipe from the
+repository root; the subshell stops
 at the first failing step, and it refuses a checkout with any uncommitted or
 untracked change before building anything:
 
@@ -35,7 +35,7 @@ untracked change before building anything:
 (
   set -euo pipefail
   if [ -n "$(git status --porcelain)" ]; then
-    echo "voices reinstall: commit or remove local changes first" >&2
+    echo "voices reinstall: a clean committed checkout is required" >&2
     exit 1
   fi
   commit="$(git rev-parse --short=12 HEAD)"
@@ -109,7 +109,10 @@ its script checks use the same locked development toolchain as the repository.
 an explicitly managed standalone skill. Plain sync replaces that installation;
 it is not a prerequisite for testing and is not a native plugin installer.
 
-## Public source and plugin candidates
+## Distribution archives
+
+This public repository is the development source. The exporter creates
+reproducible ZIPs for source distribution or skills-only installation.
 
 `skills/voices-local-studio` is the only skill source. The portable root
 manifest and Claude manifest both discover it. Standalone sync remains explicit
@@ -118,7 +121,8 @@ The installed CLI/wheel is independent. Native Git plugin installation fetches
 the full developer tree but exposes only the skill, without installing the CLI
 or its dependencies. The skills-only ZIP omits developer sources and tests.
 
-After committing the intended candidate, export to **new** paths:
+The archives contain the committed revision. After committing the intended
+changes, export to **new** paths:
 
 ```bash
 uv run python devtools/export_public.py --kind source --list
@@ -130,8 +134,8 @@ The exporter reads regular blobs from HEAD and the committed exact-file
 inventory `devtools/public-source-files.txt`. Uncommitted/untracked changes,
 history, recovery stores, state, audio, model weights and historical
 `docs/releases/` records cannot enter through a directory sweep. Only the
-original waveform SVG is admitted as a visual asset. Additions require an
-intentional inventory edit. Archives have fixed ordering, modes and timestamps;
+reviewed Voices SVG and its PNG logo are admitted as visual assets. Additions
+require an intentional inventory edit. Archives have fixed ordering, modes and timestamps;
 repeated exports of one commit are byte-identical and never overwrite a path.
 Plugin export omits skill developer tests/config and includes MIT/notices.
 
@@ -139,9 +143,9 @@ The source ZIP is a clean developer tree, not a clone or a backup. Extract it,
 build the web bundle, then run Python setup/gate normally. The runtime sdist is
 narrower: runtime source and metadata plus the built web bundle, with its
 generated dependency notices. Neither artifact contains a model or user audio.
-Public visibility and redistribution still require review of the **exact**
-archive contents and applicable rights; the inventory is not a secret scanner
-or a claim that the private repository's history is clear.
+Review the exact archive contents and applicable rights before redistributing
+them. The inventory controls ZIP membership; it is not a secret scanner or a
+review of Git history.
 
 Validate `plugin.json` against the declared Agent Plugins schema and run
 `claude plugin validate` on the extracted plugin. Exercise discovery,

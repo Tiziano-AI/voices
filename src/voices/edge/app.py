@@ -232,8 +232,8 @@ def create_edge_app(*, library: Path, out_dir: Path, web_dist: Path | None = Non
     @app.post("/api/compare")
     async def compare(request: CompareRequest) -> list[dict[str, object]]:
         context = app.state.context
-        clips = await run_in_threadpool(create_compare_clips, context, request)
-        return [clip.model_dump(mode="json") for clip in clips]
+        results = await run_in_threadpool(create_compare_clips, context, request)
+        return [result.model_dump(mode="json") for result in results]
 
     @app.post("/api/previews/{token}/export")
     async def export_preview(token: str) -> dict[str, object]:

@@ -2,11 +2,12 @@ import { useRef, useState } from 'react';
 
 import { compareVoices, EdgeRequestError, exportPreview, previewVoice, renderVoice } from '../lib/api';
 import { errorDetail } from '../lib/appState';
-import { freshnessReason, previewInput } from '../lib/previewInput';
+import { freshnessReason, previewInput, samePreviewInput } from '../lib/previewInput';
 import type {
   AudioPlayResult,
   AudioSource,
   ComparedPerformance,
+  CompareResult,
   PreviewClip,
   PreviewInput,
   RenderArtifact,
@@ -87,6 +88,19 @@ export function usePerformanceSession({
         : undefined,
     ),
   }));
+  const compareTargets = compareVoiceIds.map(targetFor).filter((input): input is PreviewInput => input !== undefined);
+  const pendingTargets = compareTargets.filter((input) => {
+    const previous = compareClips.find((item) => item.requestedInput.voice_id === input.voice_id);
+    return !previous?.clip || previous.failureDetail || !samePreviewInput(previous.clip.input, input);
+  });
+  const nextCompareTargets = pendingTargets.length > 0 ? pendingTargets : compareTargets;
+  const retryingFailures =
+    nextCompareTargets.length > 0 &&
+    nextCompareTargets.every((input) => {
+      const previous = compareClips.find((item) => item.requestedInput.voice_id === input.voice_id);
+      return previous?.failureDetail && samePreviewInput(previous.requestedInput, input);
+    });
+  const compareActionLabel = `${retryingFailures ? 'Retry' : 'Compare'} ${nextCompareTargets.length || ''}`.trim();
   const currentTarget = useRef(selectedTarget);
   currentTarget.current = selectedTarget;
 
@@ -131,17 +145,34 @@ export function usePerformanceSession({
 
   const generateCompare = async () => {
     if (!scriptText.trim() || compareVoiceIds.length === 0 || savingCompare.current) return;
-    const requested = compareVoiceIds.map(targetFor).filter((input): input is PreviewInput => input !== undefined);
-    if (requested.length !== compareVoiceIds.length) {
+    if (compareTargets.length !== compareVoiceIds.length) {
       setMessage('A queued voice is no longer available. Refresh the selection.');
       return;
     }
+    const requested = nextCompareTargets;
     const request = ++compareRequest.current;
+    const retainResults = (results: CompareResult[], failureDetail: string) => {
+      setCompareClips((current) => {
+        const updated = requested.map((input) => {
+          const result = results.find((item) => item.voice_id === input.voice_id);
+          const previous = current.find((item) => item.requestedInput.voice_id === input.voice_id);
+          return {
+            requestedInput: input,
+            clip: result?.clip ?? previous?.clip ?? null,
+            failureDetail: result?.clip ? null : (result?.error?.detail ?? failureDetail),
+          };
+        });
+        return [
+          ...current.filter((item) => !requested.some((input) => input.voice_id === item.requestedInput.voice_id)),
+          ...updated,
+        ];
+      });
+    };
     setCompareBusy(true);
     setMessage(null);
     try {
-      const clips = await compareVoices({
-        voiceIds: compareVoiceIds,
+      const results = await compareVoices({
+        voiceIds: requested.map((input) => input.voice_id),
         text: scriptText.trim(),
         language: overrideLanguage,
         expectedLanguages: Object.fromEntries(requested.map((input) => [input.voice_id, input.language])),
@@ -157,25 +188,25 @@ export function usePerformanceSession({
         expectedModel: { base_model_id: uiConfig.base_model_id, base_model_revision: uiConfig.base_model_revision },
       });
       if (request !== compareRequest.current) return;
-      setCompareClips(
-        requested.map((input) => ({
-          requestedInput: input,
-          clip: clips.find((clip) => clip.voice_id === input.voice_id) ?? null,
-          failureDetail: clips.some((clip) => clip.voice_id === input.voice_id)
-            ? null
-            : 'No compared performance returned.',
-        })),
+      retainResults(results, 'No compared performance returned.');
+      const failures = requested.filter(
+        (input) => !results.some((item) => item.voice_id === input.voice_id && item.clip),
       );
-      setCompareArtifacts({});
+      if (failures.length > 0) {
+        setMessage(
+          `${failures.length} ${failures.length === 1 ? 'voice could' : 'voices could'} not be compared. Retry the failed inputs; existing clips remain available.`,
+        );
+      }
+      if (results.some((item) => item.error?.error_code === 'InputConflictError')) {
+        try {
+          await refreshInputs();
+        } catch {
+          setMessage('An input changed. Refresh the studio before retrying; existing clips remain available.');
+        }
+      }
     } catch (error) {
       if (request === compareRequest.current) {
-        setCompareClips(
-          requested.map((input) => ({
-            requestedInput: input,
-            clip: null,
-            failureDetail: errorDetail(error, 'Unable to compare the selected voices.'),
-          })),
-        );
+        retainResults([], errorDetail(error, 'Unable to compare the selected voices.'));
         await reportError(error, 'Unable to compare the selected voices.');
       }
     } finally {
@@ -203,15 +234,15 @@ export function usePerformanceSession({
   };
 
   const saveCompare = async () => {
-    if (savingCompare.current || compareBusy || compareClips.length === 0 || compareClips.some((item) => !item.clip))
-      return;
+    const clips = compareClips.flatMap((item) => (item.clip ? [item.clip] : []));
+    if (savingCompare.current || compareBusy || clips.length === 0) return;
     savingCompare.current = true;
     setCompareRenderBusy(true);
     setMessage(null);
     const results = await Promise.allSettled(
-      compareClips.map(async ({ clip }) => ({
-        token: (clip as PreviewClip).token,
-        artifact: await exportPreview((clip as PreviewClip).token),
+      clips.map(async (clip) => ({
+        token: clip.token,
+        artifact: await exportPreview(clip.token),
       })),
     );
     const failures: string[] = [];
@@ -231,6 +262,7 @@ export function usePerformanceSession({
     previewClip: preview?.clip ?? null,
     outputReason,
     compareVoiceIds,
+    compareActionLabel,
     compareClips: compared,
     compareArtifacts,
     renderArtifact,

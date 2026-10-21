@@ -84,7 +84,9 @@ export function CreationStudio({
             </button>
           </div>
 
-          {errorMessage ? <p className="edge-message">{errorMessage}</p> : null}
+          <p className={errorMessage ? 'edge-message' : 'edge-message sr-only'} role="alert">
+            {errorMessage}
+          </p>
 
           {mode === 'design' ? (
             <DesignPane

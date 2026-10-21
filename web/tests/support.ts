@@ -108,7 +108,8 @@ export async function installStudioBrowserMocks(page: Page): Promise<void> {
     Object.defineProperty(window.HTMLMediaElement.prototype, 'play', {
       value() {
         const audio = this as HTMLMediaElement;
-        studioWindow.__playedAudioUrls.push(audio.currentSrc || audio.src);
+        // The mock resolves before resource selection; currentSrc may still name the previous clip.
+        studioWindow.__playedAudioUrls.push(audio.src);
         if (playMode === 'block') {
           return Promise.reject(new DOMException('Blocked by browser policy.', 'NotAllowedError'));
         }

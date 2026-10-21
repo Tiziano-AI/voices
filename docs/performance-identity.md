@@ -47,8 +47,13 @@ digests) and `expected_model` (model id/revision). Compare accepts
 model expectation. The language precondition prevents a changed saved default
 from silently changing a compared performance. Missing expectations request current inputs; the
 bundled browser always supplies expectations. The workflow compares them with
-the coherent capture/model selection before inference. A mismatch produces
-HTTP 409 `InputConflictError` with a refresh instruction, not silent replacement.
+the coherent capture/model selection before inference. Preview/render mismatches
+produce HTTP 409 `InputConflictError`, not silent replacement. A valid Compare
+request returns HTTP 200 with one ordered result per requested voice:
+`{voice_id, clip, error}`, with exactly one of `clip` and `error` non-null.
+Errors carry `error_code` and `detail`. A target mismatch is that row's
+`InputConflictError`, with the same refresh instruction; other targets continue.
+Malformed requests still fail as a whole before generation.
 
 The browser submits its exact trimmed text; the server returns its effective
 normalized text. Conservative non-reuse when their normalization differs is
@@ -76,6 +81,13 @@ performance, with original text and a reason they are not current. Remove/Clear
 cannot discard a card while saving. Export always uses its original token;
 expiration fails without replacement synthesis. No persistent browser journal
 or alternate audio store is introduced.
+
+Compare retains each successful clip and export if another target fails. Retry
+requests only failed or missing current inputs, without replacing ready current
+clips. A failed replacement attempt retains the previous clip as original audio
+with its own effective input, not as the attempted replacement. Failures leave
+successful exports linked. Removing the last library voice does not hide retained
+stage/compare/board work; it disables generation without a usable target.
 
 ## Local HTTP admission
 

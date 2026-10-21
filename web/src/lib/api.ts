@@ -1,6 +1,7 @@
 import type {
   BatchDesignResult,
   CloneReviewDraft,
+  CompareResult,
   EdgeErrorPayload,
   ModelIdentity,
   PreviewClip,
@@ -109,8 +110,8 @@ export function compareVoices(input: {
   expectedLanguages: Record<string, string>;
   expectedReferences: Record<string, ReferenceIdentity>;
   expectedModel: ModelIdentity;
-}): Promise<PreviewClip[]> {
-  return requestJson<PreviewClip[]>('/api/compare', {
+}): Promise<CompareResult[]> {
+  return requestJson<CompareResult[]>('/api/compare', {
     method: 'POST',
     body: JSON.stringify({
       voice_ids: input.voiceIds,

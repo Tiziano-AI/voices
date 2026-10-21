@@ -17,6 +17,7 @@ interface PerformanceDeckProps {
   previewClip: PreviewClip | null;
   outputReason: string | null;
   compareVoiceIds: string[];
+  compareActionLabel: string;
   compareClips: ComparedPerformance[];
   compareArtifacts: Record<string, RenderArtifact>;
   previewBusy: boolean;
@@ -69,6 +70,7 @@ export function PerformanceDeck({
   previewClip,
   outputReason,
   compareVoiceIds,
+  compareActionLabel,
   compareClips,
   compareArtifacts,
   previewBusy,
@@ -179,7 +181,7 @@ export function PerformanceDeck({
           onClick={onCompare}
           disabled={compareVoiceIds.length === 0 || compareBusy || compareRenderBusy || !scriptText.trim()}
         >
-          {compareBusy ? 'Comparing…' : `Compare ${compareVoiceIds.length || ''}`.trim()}
+          {compareBusy ? 'Comparing…' : compareActionLabel}
         </button>
         <button
           type="button"
@@ -200,7 +202,9 @@ export function PerformanceDeck({
         </button>
       </div>
 
-      {edgeMessage ? <p className="edge-message">{edgeMessage}</p> : null}
+      <p className={edgeMessage ? 'edge-message' : 'edge-message sr-only'} role="alert">
+        {edgeMessage}
+      </p>
 
       {hasClipOutput || hasCompareOutput ? (
         <section className="output-grid">
@@ -260,7 +264,9 @@ export function PerformanceDeck({
                           {compareBusy && !clip
                             ? 'Generating'
                             : performance?.failureDetail
-                              ? 'Failed'
+                              ? clip
+                                ? 'Original clip retained'
+                                : 'Failed'
                               : clip
                                 ? 'Ready'
                                 : 'Waiting'}
@@ -310,12 +316,7 @@ export function PerformanceDeck({
                   type="button"
                   className="ghost-button"
                   onClick={onRenderCompareSet}
-                  disabled={
-                    compareRenderBusy ||
-                    compareBusy ||
-                    compareClips.length === 0 ||
-                    compareClips.some((performance) => !performance.clip)
-                  }
+                  disabled={compareRenderBusy || compareBusy || !compareClips.some((performance) => performance.clip)}
                 >
                   {compareRenderBusy
                     ? 'Saving…'

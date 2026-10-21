@@ -85,6 +85,10 @@ export interface ComparedPerformance {
   freshnessReason?: string | null;
 }
 
+export type CompareResult =
+  | { voice_id: string; clip: PreviewClip; error: null }
+  | { voice_id: string; clip: null; error: EdgeErrorPayload };
+
 export interface RenderArtifact {
   record: {
     schema_version: 2;

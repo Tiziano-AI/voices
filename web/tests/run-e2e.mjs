@@ -102,6 +102,8 @@ await runFixture('seeded', 'tests/studio.spec.ts');
 await runFixture('seeded', 'tests/studio-board.spec.ts');
 await runFixture('seeded', 'tests/studio-board-identity.spec.ts');
 await runFixture('seeded', 'tests/studio-preview-export.spec.ts');
+await runFixture('seeded', 'tests/studio-compare-recovery.spec.ts');
+await runFixture('seeded', 'tests/studio-retained-empty.spec.ts');
 await runFixture('many', 'tests/studio-board-large.spec.ts');
 await runFixture('seeded', 'tests/studio-creation.spec.ts');
 await runFixture('seeded', 'tests/studio-record.spec.ts');

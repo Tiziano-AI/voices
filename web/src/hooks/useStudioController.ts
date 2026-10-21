@@ -183,6 +183,7 @@ export function useStudioController(): StudioController {
       previewClip: performance.previewClip,
       outputReason: performance.outputReason,
       compareVoiceIds: performance.compareVoiceIds,
+      compareActionLabel: performance.compareActionLabel,
       compareClips: performance.compareClips,
       compareArtifacts: performance.compareArtifacts,
       renderArtifact: performance.renderArtifact,

@@ -312,6 +312,11 @@ to compare the same line across voices and retain individual performances.
   an expired preview fails rather than being synthesized again.
 - Editing inputs keeps earlier clips and links. **Save original clip** explicitly
   retains a performance that no longer matches the current inputs.
+- If a comparison fails for one voice, the other clips remain playable and
+  saveable. **Retry** generates only the failed inputs, keeping successful clips
+  and downloads. Changed inputs generate the missing current performances.
+- Removing the last saved voice keeps session clips, board cards and downloads
+  accessible; select or create a voice before generating new audio.
 - **Render export** without a preview generates a new performance.
 - Unsaved previews, compare clips and board positions last only for the session.
 

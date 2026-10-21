@@ -73,9 +73,10 @@ def test_changed_selection_fails_before_inference(studio, monkeypatch, route, ch
         request["voice_ids"] = [request.pop("voice_id")]
         request["expected_references"] = {"test_voice": request.pop("expected_reference")}
     response = client.post(f"/api/{route}", json=request)
-    assert response.status_code == 409, response.text
-    assert response.json()["error_code"] == "InputConflictError"
-    assert "Refresh" in response.json()["detail"]
+    assert response.status_code == (200 if route == "compare" else 409), response.text
+    error = response.json()[0]["error"] if route == "compare" else response.json()
+    assert error["error_code"] == "InputConflictError"
+    assert "Refresh" in error["detail"]
     synthesize.assert_not_called()
 
 
@@ -106,7 +107,7 @@ def test_compare_resolves_saved_languages_and_carries_each_reference(studio):
         },
     )
     assert response.status_code == 200, response.text
-    assert [clip["input"]["language"] for clip in response.json()] == ["English", "Italian"]
+    assert [result["clip"]["input"]["language"] for result in response.json()] == ["English", "Italian"]
     assert synthesize.call_count == 2
 
 
@@ -126,9 +127,11 @@ def test_compare_rejects_changed_saved_language_before_runtime_admission(studio,
             "expected_languages": {selected["voice_id"]: selected["language"]},
         },
     )
-    assert response.status_code == 409, response.text
-    assert response.json()["error_code"] == "InputConflictError"
-    assert "language changed" in response.json()["detail"]
+    assert response.status_code == 200, response.text
+    result = response.json()[0]
+    assert result["clip"] is None
+    assert result["error"]["error_code"] == "InputConflictError"
+    assert "language changed" in result["error"]["detail"]
     runtime.assert_not_called()
     synthesize.assert_not_called()
 

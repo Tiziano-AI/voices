@@ -9,7 +9,7 @@ from voices import config
 from voices.cli_support import default_display_name
 from voices.domain.contracts import DesignPromptInput, OutputRecord, VoiceRecord
 from voices.domain.create_contracts import CloneReviewRequest
-from voices.domain.errors import InvalidInputError, InvalidPromptFileError
+from voices.domain.errors import InvalidInputError, InvalidPromptFileError, VoicesError
 from voices.domain.speech_contracts import SpeechInput
 from voices.edge.contracts import (
     BatchDesignForm,
@@ -18,7 +18,10 @@ from voices.edge.contracts import (
     CloneReviewDraft,
     CloneReviewForm,
     CloneSaveRequest,
+    CompareFailure,
     CompareRequest,
+    CompareResult,
+    CompareSuccess,
     DesignRequest,
     PreviewClip,
     PreviewRequest,
@@ -27,6 +30,7 @@ from voices.edge.contracts import (
     VoiceDetail,
     VoiceSummary,
 )
+from voices.edge.errors import edge_payload_for_error
 from voices.edge.storage import StudioAssetStore
 from voices.store.library_store import delete_voice_record as delete_persisted_voice
 from voices.store.library_store import list_voice_records, load_voice_record, load_voice_snapshot
@@ -152,22 +156,26 @@ def create_preview_clip(
     )
 
 
-def create_compare_clips(context: StudioContext, request: CompareRequest) -> list[PreviewClip]:
-    """Generate one compare clip per selected voice."""
-    return [
-        create_preview_clip(
-            context,
-            PreviewRequest(
-                voice_id=voice_id,
-                text=request.text,
-                language=request.language,
-                expected_reference=(request.expected_references or {}).get(voice_id),
-                expected_model=request.expected_model,
-            ),
-            expected_language=(request.expected_languages or {}).get(voice_id),
-        )
-        for voice_id in request.voice_ids
-    ]
+def create_compare_clips(context: StudioContext, request: CompareRequest) -> list[CompareResult]:
+    """Return every target's outcome without losing earlier successful previews."""
+    results: list[CompareResult] = []
+    for voice_id in request.voice_ids:
+        try:
+            clip = create_preview_clip(
+                context,
+                PreviewRequest(
+                    voice_id=voice_id,
+                    text=request.text,
+                    language=request.language,
+                    expected_reference=(request.expected_references or {}).get(voice_id),
+                    expected_model=request.expected_model,
+                ),
+                expected_language=(request.expected_languages or {}).get(voice_id),
+            )
+            results.append(CompareSuccess(voice_id=voice_id, clip=clip))
+        except VoicesError as exc:
+            results.append(CompareFailure(voice_id=voice_id, error=edge_payload_for_error(exc)))
+    return results
 
 
 def render_artifact(context: StudioContext, request: RenderRequest) -> RenderArtifact:

@@ -87,7 +87,7 @@ def test_compare_returns_ordered_ephemeral_clips(mock_synthesize, tmp_path: Path
     assert response.status_code == 200
     payload = response.json()
     assert [row["voice_id"] for row in payload] == ["alpha_voice", "beta_voice"]
-    assert all(row["audio_url"].startswith("/api/assets/") for row in payload)
+    assert all(row["clip"]["audio_url"].startswith("/api/assets/") and row["error"] is None for row in payload)
     assert not out_dir.exists()
     assert mock_synthesize.call_count == 2
 

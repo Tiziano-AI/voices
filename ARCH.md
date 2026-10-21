@@ -139,6 +139,6 @@ Pydantic/FastAPI validation and Starlette parser HTTP 400 errors share the brows
 
 Read routes expose UI config, ordered voice summaries, full voice detail, and saved reference audio.
 
-Preview responses carry effective `input`; browser requests carry reference/model preconditions, checked before inference (409 on conflict). The exact wire contract is in [performance identity](docs/performance-identity.md).
+Preview responses carry effective `input`; browser requests carry reference/model preconditions, checked before inference (409 on preview/render conflict). Compare returns ordered per-voice `clip`/`error` outcomes, preserving successes through another voice's failure. The exact wire contract is in [performance identity](docs/performance-identity.md).
 
 Mutation routes own preview/compare, render, `POST /api/previews/{token}/export`, design/batch design, clone/record review, single-spend clone save, and deletion. Preview export copies through the same locked WAV/sidecar publisher as render; only render synthesizes. `record_free` review enforces its minimum before save.

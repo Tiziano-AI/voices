@@ -17,6 +17,13 @@ interface StudioShellProps {
  */
 export function StudioShell({ controller }: StudioShellProps) {
   const { state, actions } = controller;
+  const studioReady = !state.appLoading && !state.libraryIntegrityError && !state.bootstrapError;
+  const hasRetainedWork =
+    state.previewClip !== null ||
+    state.renderArtifact !== null ||
+    state.compareClips.length > 0 ||
+    Object.keys(state.compareArtifacts).length > 0 ||
+    state.auditionBoard.candidates.length > 0;
 
   return (
     <div className="studio-shell">
@@ -40,11 +47,11 @@ export function StudioShell({ controller }: StudioShellProps) {
         bootstrapError={state.bootstrapError}
         onRetry={() => void actions.bootstrapStudio()}
       />
-      {!state.appLoading && !state.libraryIntegrityError && !state.bootstrapError && !state.hasVoices ? (
+      {studioReady && !state.hasVoices && !hasRetainedWork ? (
         <Launchpad theme={state.theme} onThemeChange={actions.setTheme} onOpenCreate={actions.openCreation} />
       ) : null}
 
-      {!state.appLoading && !state.libraryIntegrityError && !state.bootstrapError && state.hasVoices ? (
+      {studioReady && (state.hasVoices || hasRetainedWork) ? (
         <div className="studio-frame">
           <VoiceRack
             voices={state.voices}
@@ -65,6 +72,7 @@ export function StudioShell({ controller }: StudioShellProps) {
               previewClip={state.previewClip}
               outputReason={state.outputReason}
               compareVoiceIds={state.compareVoiceIds}
+              compareActionLabel={state.compareActionLabel}
               compareClips={state.compareClips}
               compareArtifacts={state.compareArtifacts}
               previewBusy={state.previewBusy}

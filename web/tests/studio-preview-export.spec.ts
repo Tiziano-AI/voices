@@ -161,7 +161,7 @@ test('compare saves keep successful downloads through partial failure and retry'
   await prepareCompare(page);
   const compared = page.waitForResponse('**/api/compare');
   await page.getByRole('button', { name: /Compare 2/ }).click();
-  const clips = await (await compared).json();
+  const clips = (await (await compared).json()).map((result: { clip: { token: string } }) => result.clip);
   let failFirst = true;
   const exportPaths: string[] = [];
   const renders: string[] = [];

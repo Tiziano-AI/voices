@@ -24,6 +24,7 @@ export interface StudioControllerState {
   previewClip: PreviewClip | null;
   outputReason: string | null;
   compareVoiceIds: string[];
+  compareActionLabel: string;
   compareClips: ComparedPerformance[];
   compareArtifacts: Record<string, RenderArtifact>;
   renderArtifact: RenderArtifact | null;

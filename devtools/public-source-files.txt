@@ -145,6 +145,7 @@ tests/test_config.py
 tests/test_contracts.py
 tests/test_create_contracts.py
 tests/test_edge_api.py
+tests/test_edge_compare.py
 tests/test_edge_form_limits.py
 tests/test_edge_local_admission.py
 tests/test_edge_service.py
@@ -227,10 +228,12 @@ web/tests/studio-board-large.spec.ts
 web/tests/studio-board-identity.spec.ts
 web/tests/studio-board.spec.ts
 web/tests/studio-cancel.spec.ts
+web/tests/studio-compare-recovery.spec.ts
 web/tests/studio-creation.spec.ts
 web/tests/studio-preview-export.spec.ts
 web/tests/studio-record-recovery.spec.ts
 web/tests/studio-record.spec.ts
+web/tests/studio-retained-empty.spec.ts
 web/tests/studio.spec.ts
 web/tests/support.ts
 web/tsconfig.app.json

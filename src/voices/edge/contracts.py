@@ -17,6 +17,7 @@ from voices.domain.contracts import (
 )
 from voices.domain.create_contracts import GUIDED_RECORDING_SCRIPTS, TranscriptionSegment
 from voices.domain.speech_contracts import SpeechInput, SpeechModelIdentity, SpeechReferenceIdentity
+from voices.edge.errors import EdgeErrorPayload
 
 
 def _require_non_empty(label: str, value: str) -> str:
@@ -150,6 +151,29 @@ class PreviewClip(BaseModel):
     language: str
     audio_url: str
     input: SpeechInput
+
+
+class CompareSuccess(BaseModel):
+    """One playable comparison occurrence, independent of other voices' failures."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    voice_id: str
+    clip: PreviewClip
+    error: None = None
+
+
+class CompareFailure(BaseModel):
+    """One failed comparison target without discarding successful occurrences."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    voice_id: str
+    clip: None = None
+    error: EdgeErrorPayload
+
+
+CompareResult = CompareSuccess | CompareFailure
 
 
 class RenderRequest(PreviewRequest):

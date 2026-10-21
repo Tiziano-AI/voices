@@ -70,7 +70,7 @@ def plugin_path(name: str) -> bool:
 
 
 def collect_export(repo: Path, kind: str) -> tuple[str, dict[str, bytes]]:
-    """Collect only allowlisted regular blobs from HEAD, not dirty or ignored files."""
+    """Collect committed regular blobs; use the plugin guide as its archive README."""
     revision = git_bytes(repo, "rev-parse", "--verify", "HEAD^{commit}").decode().strip()
     files = committed_files(repo, revision)
     manifest_blob = files.get(MANIFEST)
@@ -83,7 +83,10 @@ def collect_export(repo: Path, kind: str) -> tuple[str, dict[str, bytes]]:
     selected = [name for name in inventory if kind == "source" or plugin_path(name)]
     if kind == "plugin" and not PLUGIN_FILES.issubset(selected):
         raise ValueError("plugin export requires both manifests, license, notices and package guide")
-    return revision, {name: git_bytes(repo, "cat-file", "blob", files[name]) for name in selected}
+    members = {name: git_bytes(repo, "cat-file", "blob", files[name]) for name in selected}
+    if kind == "plugin":
+        members["README.md"] = members.pop("PLUGIN.md")
+    return revision, members
 
 
 def write_archive(output: Path, members: dict[str, bytes]) -> None:

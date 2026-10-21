@@ -137,7 +137,8 @@ history, recovery stores, state, audio, model weights and historical
 reviewed Voices SVG and its PNG logo are admitted as visual assets. Additions
 require an intentional inventory edit. Archives have fixed ordering, modes and timestamps;
 repeated exports of one commit are byte-identical and never overwrite a path.
-Plugin export omits skill developer tests/config and includes MIT/notices.
+Plugin export omits skill developer tests/config, includes MIT/notices and uses
+`PLUGIN.md` as its root `README.md` instead of the developer-source README.
 
 The source ZIP is a clean developer tree, not a clone or a backup. Extract it,
 build the web bundle, then run Python setup/gate normally. The runtime sdist is

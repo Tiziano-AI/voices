@@ -100,6 +100,26 @@ def test_inventory_rejects_duplicate_members() -> None:
         export_public.admitted_paths("README.md\nREADME.md\n")
 
 
+def test_plugin_export_uses_its_guide_as_the_only_readme(tmp_path: Path) -> None:
+    """A standalone plugin explains setup without linking to excluded developer files."""
+    repo = tmp_path / "repo"
+    files = {
+        "plugin.json": "{}\n",
+        ".claude-plugin/plugin.json": "{}\n",
+        "LICENSE": "MIT\n",
+        "NOTICE.md": "Distribution notices.\n",
+        "PLUGIN.md": "# Agent plugin\n\n[Notices](NOTICE.md).\n",
+        "README.md": "# Developer source\n\n[Build](devtools/README.md).\n",
+    }
+    commit_fixture(repo, {**files, export_public.MANIFEST: "\n".join(files) + "\n"})
+    _, plugin = export_public.collect_export(repo, "plugin")
+    _, source = export_public.collect_export(repo, "source")
+    assert plugin["README.md"] == files["PLUGIN.md"].encode()
+    assert "PLUGIN.md" not in plugin
+    assert source["README.md"] == files["README.md"].encode()
+    assert source["PLUGIN.md"] == files["PLUGIN.md"].encode()
+
+
 def test_inventory_cannot_admit_committed_links(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     commit_fixture(repo, {export_public.MANIFEST: "alias.py\n", "owner.py": "original\n"})

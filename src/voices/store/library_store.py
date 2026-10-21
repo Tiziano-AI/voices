@@ -245,20 +245,26 @@ def _open_voice_asset(directory_fd: int, name: str, voice_id: str) -> BinaryIO:
 
 def load_voice_snapshot(library: Path, voice_id: str) -> VoiceSnapshot:
     """Read one anchored asset set, or fail before synthesis if an overwrite retires it."""
-    voice_directory = _voice_directory(library, voice_id)
     try:
-        directory_fd = os.open(voice_directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    except FileNotFoundError, NotADirectoryError:
-        raise VoiceNotFoundError(f"Voice '{voice_id}' not found.") from None
-    with ExitStack() as stack:
-        stack.callback(os.close, directory_fd)
-        # Open every asset before reading: replacement may unlink the old directory,
-        # but these descriptors continue to own the same complete reference.
-        handles = [
-            stack.enter_context(_open_voice_asset(directory_fd, name, voice_id))
-            for name in (VOICE_METADATA_NAME, REFERENCE_AUDIO_NAME, REFERENCE_TEXT_NAME)
-        ]
-        metadata, audio, transcript = (handle.read() for handle in handles)
+        voice_directory = _voice_directory(library, voice_id)
+        with ExitStack() as stack:
+            try:
+                directory_fd = os.open(voice_directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            except FileNotFoundError, NotADirectoryError:
+                raise VoiceNotFoundError(f"Voice '{voice_id}' not found.") from None
+            stack.callback(os.close, directory_fd)
+            # Open every asset before reading: replacement may unlink the old directory,
+            # but these descriptors continue to own the same complete reference.
+            handles = [
+                stack.enter_context(_open_voice_asset(directory_fd, name, voice_id))
+                for name in (VOICE_METADATA_NAME, REFERENCE_AUDIO_NAME, REFERENCE_TEXT_NAME)
+            ]
+            metadata, audio, transcript = (handle.read() for handle in handles)
+    except OSError as exc:
+        raise InvalidVoiceEntryError(
+            f"Voice '{voice_id}' reference could not be read: {exc.strerror or str(exc)}. "
+            "Check its files, permissions and storage before retrying."
+        ) from exc
     try:
         record = VoiceRecord.model_validate(_read_json(metadata, voice_id))
         reference_text = transcript.decode("utf-8").rstrip()

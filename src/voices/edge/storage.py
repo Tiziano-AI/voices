@@ -1,6 +1,7 @@
 import shutil
 import tempfile
 import threading
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
@@ -9,7 +10,7 @@ import numpy as np
 
 from voices.config import FALLBACK_SAMPLE_RATE
 from voices.domain.contracts import OutputDraft
-from voices.domain.errors import VoiceNotFoundError
+from voices.domain.errors import PreviewStorageError, VoiceNotFoundError
 from voices.store.library_store import write_wav
 from voices.store.output_store import save_existing_output
 
@@ -96,7 +97,15 @@ class StudioAssetStore:
         """Persist one synthesized preview clip and return its token."""
         token = uuid4().hex
         path = self._root / f"{token}.wav"
-        write_wav(path, audio_data, sample_rate)
+        try:
+            write_wav(path, audio_data, sample_rate)
+        except OSError as exc:
+            with suppress(OSError):
+                path.unlink(missing_ok=True)
+            raise PreviewStorageError(
+                f"Preview audio for voice '{output_draft.voice_id}' could not be saved: {exc.strerror or str(exc)}. "
+                "Check disk space and temporary-folder permissions before retrying."
+            ) from exc
         with self._lock:
             self._asset_paths[token] = path
             self._preview_drafts[token] = output_draft.model_copy(deep=True)

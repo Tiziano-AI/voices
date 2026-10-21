@@ -13,6 +13,7 @@ from voices.domain.errors import (
     LibraryIntegrityError,
     MissingDependencyError,
     OperationCancelledError,
+    PreviewStorageError,
     VoiceAlreadyExistsError,
     VoiceNotFoundError,
     VoicesError,
@@ -36,7 +37,7 @@ def edge_status_for_error(error: VoicesError) -> int:
         return status.HTTP_404_NOT_FOUND
     if isinstance(error, (InputConflictError, LibraryIntegrityError, InvalidVoiceEntryError)):
         return status.HTTP_409_CONFLICT
-    if isinstance(error, (MissingDependencyError, AudioConversionError, GenerationError)):
+    if isinstance(error, (MissingDependencyError, AudioConversionError, GenerationError, PreviewStorageError)):
         return status.HTTP_503_SERVICE_UNAVAILABLE
     return status.HTTP_500_INTERNAL_SERVER_ERROR
 

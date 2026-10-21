@@ -132,11 +132,8 @@ def test_capture_closes_every_descriptor_on_success_and_failure(tmp_path, monkey
         monkeypatch.setattr(library_store.os, "fdopen", lambda *args: Unreadable(real_fdopen(*args)))
     if corruption is None:
         library_store.load_voice_snapshot(library, "test_voice")
-    elif corruption == "read":
-        with pytest.raises(OSError, match="read failed"):
-            library_store.load_voice_snapshot(library, "test_voice")
     else:
-        with pytest.raises(InvalidVoiceEntryError):
+        with pytest.raises(InvalidVoiceEntryError, match="read failed" if corruption == "read" else None):
             library_store.load_voice_snapshot(library, "test_voice")
     assert opened
     for fd in opened:

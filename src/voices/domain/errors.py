@@ -90,6 +90,13 @@ class GenerationError(VoicesError):
     exit_code = EXIT_GENERATION
 
 
+class PreviewStorageError(VoicesError):
+    """Generated preview audio could not be written to the process-local store."""
+
+    code = "preview_storage"
+    exit_code = EXIT_INTERNAL
+
+
 class MissingDependencyError(VoicesError):
     """A required local executable dependency is not available."""
 

@@ -55,6 +55,11 @@ Errors carry `error_code` and `detail`. A target mismatch is that row's
 `InputConflictError`, with the same refresh instruction; other targets continue.
 Malformed requests still fail as a whole before generation.
 
+Reference-read I/O failures become `InvalidVoiceEntryError`; preview-write I/O
+failures become `PreviewStorageError`. Compare reports them per target without
+discarding successes. A standalone preview returns HTTP 409 or 503 respectively.
+This does not recover an unseen token after process termination or a lost response.
+
 The browser submits its exact trimmed text; the server returns its effective
 normalized text. Conservative non-reuse when their normalization differs is
 allowed; false reuse is not.

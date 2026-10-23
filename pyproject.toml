@@ -1,6 +1,6 @@
 [project]
 name = "voices"
-version = "0.2.1"
+version = "0.2.2"
 description = "Local MLX voice library CLI using Qwen3-TTS"
 readme = "README.md"
 license = "MIT"

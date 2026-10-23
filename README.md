@@ -15,9 +15,6 @@ preview you heard rather than generating it again.
 [Commands](#command-reference) · [Agent plugin](PLUGIN.md) ·
 [Development](devtools/README.md)
 
-0.2.2 is an unpublished, uninstalled candidate with certifi 2026.10.19.
-The global 0.2.1 CLI still has certifi 2026.7.22.
-
 ## Requirements
 
 - Apple Silicon Mac

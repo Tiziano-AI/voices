@@ -67,7 +67,19 @@ def test_source_validation_does_not_access_an_installed_skill(
 def test_skill_checks_use_repository_locked_tools() -> None:
     """Avoid resolving a different unpinned toolchain in a personal shared environment."""
     prefix = ["uv", "run", "--locked", "--project", str(check_skill.REPO_ROOT)]
-    assert all(command[: len(prefix)] == prefix for command in check_skill.skill_check_commands())
+    commands = check_skill.skill_check_commands()
+    assert all(command[: len(prefix)] == prefix for command in commands if "basedpyright" not in command)
+    assert next(command for command in commands if "basedpyright" in command) == [
+        "pnpm",
+        "--dir",
+        str(check_skill.REPO_ROOT / "web"),
+        "exec",
+        "basedpyright",
+        "--project",
+        str(check_skill.SKILL_ROOT / "basedpyrightconfig.json"),
+        "--level",
+        "error",
+    ]
     assert check_skill.skill_env()["PYTHONPATH"] == str(check_skill.SKILL_ROOT / "scripts")
 
 

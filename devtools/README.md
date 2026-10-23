@@ -105,6 +105,10 @@ evidence first. Model and audio-device paths are mocked in this gate.
 
 The default gate validates the source skill, not a prior global installation;
 its script checks use the same locked development toolchain as the repository.
+Both Python-project and skill type checks use the npm Basedpyright package
+through the web project's selected Node runtime, not a Python-distributed Node
+binary. Run the project check separately with
+`pnpm --dir web exec basedpyright --project ..`.
 `uv run python devtools/sync_skill.py --check` is a separate read-only check for
 an explicitly managed standalone skill. Plain sync replaces that installation;
 it is not a prerequisite for testing and is not a native plugin installer.

@@ -11,7 +11,7 @@ COMMANDS = [
     ["uv", "run", "ruff", "check", "."],
     ["uv", "run", "ruff", "format", "--check", "."],
     ["uv", "run", "python", "devtools/check_file_size.py"],
-    ["uv", "run", "basedpyright"],
+    ["pnpm", "--dir", "web", "exec", "basedpyright", "--project", ".."],
     ["uv", "run", "pytest", "tests/", "-v"],
     ["pnpm", "--dir", "web", "lint"],
     ["pnpm", "--dir", "web", "build"],

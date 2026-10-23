@@ -20,7 +20,7 @@ Base synthesis decodes bytes under `serialized_mlx_runtime()` through
 nchannels=1)` and passes an MLX float32 array. It exhausts generation and
 post-yield cleanup under the same lock.
 
-The adopted mlx-audio 0.5.1 `_icl_cache` keys references by transcript, size
+The adopted mlx-audio 0.6.1 `_icl_cache` keys references by transcript, size
 and sum: different waveforms can collide. The adapter clears this private cache
 before every Base generation, retaining cached model weights. This is a narrow
 upstream coupling to reassess on dependency changes, not another cache, a

@@ -114,7 +114,7 @@ def synthesize_reference_voice(
             samples, _ = read_audio(
                 io.BytesIO(reference_audio), dtype="float32", sample_rate=int(runtime.sample_rate), nchannels=1
             )
-            # mlx-audio 0.5.1 keys this private cache by sample count and sum,
+            # mlx-audio 0.6.1 keys this private cache by sample count and sum,
             # which collide for different references. Retain loaded model weights,
             # never its lossy reference-code identity across our operations.
             runtime._icl_cache.clear()

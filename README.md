@@ -18,7 +18,7 @@ preview you heard rather than generating it again.
 ## Requirements
 
 - Apple Silicon Mac
-- Python `>=3.14.7,<3.15` (`.python-version` selects `3.14.7`)
+- Python `>=3.14.9,<3.15` (`.python-version` selects `3.14.9`)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - [pnpm](https://pnpm.io/installation) and Node.js for source builds; `web/package.json` selects their versions
 - FFmpeg on `PATH` for audio import/review, recording, `transcribe` and `align`

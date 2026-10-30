@@ -25,7 +25,13 @@ def register_alignment_commands(root: typer.Typer) -> None:
         context = context_from_typer(ctx)
 
         def run() -> None:
-            result = align_speech(audio=audio, text_file=text_file, language=language, model_revision=model_revision)
+            result = align_speech(
+                audio=audio,
+                text_file=text_file,
+                language=language,
+                model_revision=model_revision,
+                compute=context.compute,
+            )
             if context.json_output:
                 emit_json(model_object(result))
                 return

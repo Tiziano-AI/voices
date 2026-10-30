@@ -14,6 +14,7 @@ from voices import config
 from voices.adapter import mlx_align
 from voices.adapter.ffmpeg_audio import convert_to_reference_audio
 from voices.cli import app
+from voices.compute import ComputeSelection
 from voices.domain.alignment_contracts import AlignmentWord
 from voices.domain.contracts import SUPPORTED_LANGUAGE_LABELS
 from voices.domain.errors import GenerationError
@@ -164,6 +165,29 @@ def test_optional_tokenizer_missing_before_alignment(inputs, monkeypatch, langua
     assert result.exit_code == 5
     assert package in json.loads(result.stdout)["error"]["message"]
     aligner.assert_not_called()
+
+
+@pytest.mark.parametrize("language", ["Japanese", "Korean"])
+def test_dgx_alignment_does_not_require_unused_mac_tokenizer(inputs, monkeypatch, language):
+    audio, text, normalized, aligner = inputs
+    local_dependency = MagicMock(return_value=None)
+    monkeypatch.setattr(workflow, "find_spec", local_dependency)
+    remote = MagicMock(
+        return_value=MagicMock(
+            payload={"words": [{"text": "Hello world.", "start": 0, "end": 1}]},
+            runtime=workflow.get_runtime_identity(),
+        )
+    )
+    monkeypatch.setattr(workflow, "execute", remote)
+    selection = ComputeSelection("dgx", "dgx-b")
+    result = workflow.align_speech(audio=audio, text_file=text, language=language, compute=selection)
+    local_dependency.assert_not_called()
+    aligner.assert_not_called()
+    assert remote.call_args.args == (selection, "align")
+    assert remote.call_args.kwargs["audio"] == normalized.astype("<f4").tobytes()
+    assert remote.call_args.kwargs["language"] == language
+    assert result.model_revision == selection.model("align")[1]
+    assert result.spoken_content_verified is False
 
 
 @pytest.mark.parametrize(

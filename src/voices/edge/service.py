@@ -7,6 +7,7 @@ from fastapi import UploadFile
 
 from voices import config
 from voices.cli_support import default_display_name
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.contracts import DesignPromptInput, OutputRecord, VoiceRecord
 from voices.domain.create_contracts import CloneReviewRequest
 from voices.domain.errors import InvalidInputError, InvalidPromptFileError, VoicesError
@@ -80,6 +81,7 @@ class StudioContext:
     out_dir: Path
     asset_store: StudioAssetStore
     cancellations: OperationCancellationRegistry = field(default_factory=OperationCancellationRegistry)
+    compute: ComputeSelection = LOCAL_COMPUTE
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +138,7 @@ def create_preview_clip(
         expected_reference=request.expected_reference,
         expected_model=request.expected_model,
         expected_language=expected_language,
+        compute=context.compute,
     )
     asset = context.asset_store.save_preview_audio(generated.audio, generated.sample_rate, generated.output_draft)
     return PreviewClip(
@@ -188,6 +191,7 @@ def render_artifact(context: StudioContext, request: RenderRequest) -> RenderArt
         out_dir=context.out_dir,
         expected_reference=request.expected_reference,
         expected_model=request.expected_model,
+        compute=context.compute,
     )
     return _artifact_from_path(wav_path)
 
@@ -219,6 +223,7 @@ def prepare_design_voice(context: StudioContext, request: DesignRequest) -> Prep
         language=request.language,
         library=context.library,
         overwrite=request.overwrite,
+        compute=context.compute,
     )
 
 
@@ -287,6 +292,7 @@ def prepare_batch_prompt_voice(
         language=prompt.language or loaded.form.language,
         library=context.library,
         overwrite=loaded.form.overwrite,
+        compute=context.compute,
     )
 
 
@@ -307,6 +313,7 @@ def review_clone_upload(context: StudioContext, upload: UploadFile, form: CloneR
         _write_upload_to_temp(upload, upload_path)
         fallback_label = Path(upload.filename or "voice").stem.replace("_", " ").replace("-", " ").strip() or "Voice"
         prepared = prepare_clone_review(
+            compute=context.compute,
             audio_path=upload_path,
             library=context.library,
             request=CloneReviewRequest(

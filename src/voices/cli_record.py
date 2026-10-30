@@ -123,7 +123,9 @@ def record(
                 )
         with tempfile.TemporaryDirectory(prefix="voices-record-") as temp_dir_name:
             audio_path = Path(temp_dir_name) / "recording.wav"
-            approved_transcript = record_and_review(audio_path, resolved_mode, resolved_language, script, lib)
+            approved_transcript = record_and_review(
+                audio_path, resolved_mode, resolved_language, script, lib, compute=context.compute
+            )
             resolved_id, resolved_display_name = _resolve_record_identity(
                 lib,
                 id,

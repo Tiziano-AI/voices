@@ -6,6 +6,7 @@ export interface EdgeErrorPayload {
 }
 
 export interface UiConfig {
+  compute_backend?: 'mlx' | 'dgx';
   base_model_id: string;
   base_model_revision: string;
   supported_languages: string[];

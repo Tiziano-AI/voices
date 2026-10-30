@@ -25,6 +25,7 @@ def _run(*arguments: str) -> subprocess.CompletedProcess[str]:
         (["--not-an-option"], "No such option"),
         (["ui", "--port", "not-a-number"], "not a valid int"),
         (["show", "--not-an-option"], "No such option"),
+        (["--compute", "dgx", "languages"], "explicit SSH host alias"),
     ],
 )
 def test_json_usage_failures_have_one_envelope_and_no_traceback(arguments: list[str], message: str):

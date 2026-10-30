@@ -28,6 +28,9 @@ export function StudioShell({ controller }: StudioShellProps) {
   return (
     <div className="studio-shell">
       <div className="studio-background" />
+      {state.uiConfig.compute_backend === 'dgx' ? (
+        <div role="status">DGX compute · reference library, review and exports stay on this Mac</div>
+      ) : null}
       <CreationStudio
         open={state.creationOpen}
         mode={state.creationMode}

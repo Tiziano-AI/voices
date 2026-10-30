@@ -8,6 +8,7 @@ import typer
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from voices.cli_support import exit_for_error
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.errors import InvalidInputError, VoicesError
 
 JSON_OBJECT_ADAPTER = TypeAdapter(dict[str, object])
@@ -19,6 +20,7 @@ class CliContext:
     """Global CLI execution context derived from Typer callback options."""
 
     json_output: bool
+    compute: ComputeSelection = LOCAL_COMPUTE
 
 
 def context_from_typer(ctx: typer.Context) -> CliContext:

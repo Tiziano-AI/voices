@@ -2,7 +2,7 @@
 
 ## Outcome
 
-`voices` is a local-first Apple Silicon voice studio for creating reusable reference voices, hearing real lines immediately, comparing options side by side, and exporting final speech on-device.
+`voices` is a local-first Apple Silicon voice studio for creating reusable reference voices, hearing real lines immediately, comparing options side by side, and exporting final speech. Mac MLX is the default compute; an explicitly selected internal DGX executor can provide complete results over existing authenticated SSH. Capture, normalization, library, review, playback and saving remain on Mac.
 
 The library under `~/.voices` keeps reviewed references available for later work.
 
@@ -33,7 +33,7 @@ The canonical operator loop is:
 ## Non-goals
 
 - hosted APIs, cloud sync, or remote multi-user serving
-- speaker training pipelines, checkpoint fine-tuning, or model management beyond the supported MLX runtimes
+- speaker training pipelines, checkpoint fine-tuning, or general model provisioning/management
 - DAW-style editing, timeline composition, or batch post-processing
 - heavy library-management suites such as tagging, favorites, archives, or version trees beyond the current inspect, compare, and delete scope
 - permanent compatibility layers for retired schemas or duplicate product paths

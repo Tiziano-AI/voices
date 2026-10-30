@@ -5,10 +5,17 @@ from pathlib import Path
 
 import numpy as np
 
-from voices import config
+from voices.adapter.dgx_compute import execute
 from voices.adapter.mlx_qwen import synthesize_reference_voice
 from voices.adapter.model_snapshot import require_model_revision
-from voices.domain.contracts import OutputDraft, VoiceRecord, require_optional_supported_language, require_voice_id
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
+from voices.domain.contracts import (
+    OutputDraft,
+    VoiceRecord,
+    require_non_empty_text,
+    require_optional_supported_language,
+    require_voice_id,
+)
 from voices.domain.errors import InputConflictError
 from voices.domain.speech_contracts import SpeechModelIdentity, SpeechReferenceIdentity
 from voices.runtime_identity import get_runtime_identity
@@ -37,13 +44,15 @@ def prepare_speech(
     expected_reference: SpeechReferenceIdentity | None = None,
     expected_model: SpeechModelIdentity | None = None,
     expected_language: str | None = None,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> PreparedSpeech:
     """Capture the immutable generation inputs before calling the runtime."""
     voice_id = require_voice_id(voice_id)
+    text = require_non_empty_text("text", text)
     language = require_optional_supported_language(language)
     expected_language = require_optional_supported_language(expected_language)
-    model_id = config.BASE_MODEL
-    revision = require_model_revision(config.BASE_MODEL_REVISION if model_revision is None else model_revision)
+    model_id, selected_revision = compute.model("base", model_revision)
+    revision = require_model_revision(selected_revision)
     assets = load_voice_snapshot(library, voice_id)
     reference = SpeechReferenceIdentity(
         reference_sha256=assets.record.reference_sha256, reference_text_sha256=assets.reference_text_sha256
@@ -56,7 +65,30 @@ def prepare_speech(
     resolved_language = language or assets.record.language
     if expected_language is not None and resolved_language != expected_language:
         raise InputConflictError("The language changed. Refresh the voice library before retrying.")
-    runtime = get_runtime_identity()
+    if compute.backend == "dgx":
+        result = execute(
+            compute,
+            "base",
+            text=text,
+            language=resolved_language,
+            audio=assets.reference_audio,
+            audio_format="wav",
+            reference_text=assets.reference_text,
+            revision=revision,
+        )
+        if result.audio is None or result.sample_rate is None:
+            raise InputConflictError("DGX synthesis did not return complete audio.")
+        audio, sample_rate, runtime = result.audio, result.sample_rate, result.runtime
+    else:
+        runtime = get_runtime_identity()
+        audio, sample_rate = synthesize_reference_voice(
+            text=text,
+            language=resolved_language,
+            reference_audio=assets.reference_audio,
+            reference_text=assets.reference_text,
+            model_id=model_id,
+            model_revision=revision,
+        )
     output_draft = OutputDraft(
         voice_id=voice_id,
         created_at=utc_now(),
@@ -69,14 +101,6 @@ def prepare_speech(
         reference_sha256=assets.record.reference_sha256,
         reference_text_sha256=assets.reference_text_sha256,
     )
-    audio, sample_rate = synthesize_reference_voice(
-        text=output_draft.text,
-        language=resolved_language,
-        reference_audio=assets.reference_audio,
-        reference_text=assets.reference_text,
-        model_id=model_id,
-        model_revision=revision,
-    )
     return PreparedSpeech(audio, sample_rate, assets.record, output_draft)
 
 
@@ -86,9 +110,10 @@ def synthesize_to_memory(
     text: str,
     language: str | None,
     library: Path,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> tuple[np.ndarray, int, VoiceRecord]:
     """Return the immediate-playback projection over the same generation owner."""
-    generated = prepare_speech(voice_id=voice_id, text=text, language=language, library=library)
+    generated = prepare_speech(voice_id=voice_id, text=text, language=language, library=library, compute=compute)
     return generated.audio, generated.sample_rate, generated.voice
 
 
@@ -102,6 +127,7 @@ def render_speech(
     model_revision: str | None = None,
     expected_reference: SpeechReferenceIdentity | None = None,
     expected_model: SpeechModelIdentity | None = None,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> Path:
     """Generate speech and persist the WAV plus schema v2 sidecar."""
     voice_id = require_voice_id(voice_id)
@@ -114,6 +140,7 @@ def render_speech(
         model_revision=model_revision,
         expected_reference=expected_reference,
         expected_model=expected_model,
+        compute=compute,
     )
     return save_rendered_output(
         out_dir=out_dir,

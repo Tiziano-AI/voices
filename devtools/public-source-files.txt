@@ -72,6 +72,9 @@ skills/voices-local-studio/scripts/voice_workbench/contracts.py
 skills/voices-local-studio/tests/test_voice_workbench.py
 src/voices/__init__.py
 src/voices/adapter/__init__.py
+src/voices/adapter/dgx_compute.py
+src/voices/adapter/dgx_engine.py
+src/voices/adapter/dgx_worker.py
 src/voices/adapter/ffmpeg_audio.py
 src/voices/adapter/mlx_align.py
 src/voices/adapter/mlx_qwen.py
@@ -81,6 +84,7 @@ src/voices/adapter/model_snapshot.py
 src/voices/cli.py
 src/voices/cli_align.py
 src/voices/cli_clone.py
+src/voices/cli_compute.py
 src/voices/cli_create.py
 src/voices/cli_diagnostics.py
 src/voices/cli_edge.py
@@ -93,6 +97,7 @@ src/voices/cli_review.py
 src/voices/cli_speech.py
 src/voices/cli_support.py
 src/voices/cli_transcribe.py
+src/voices/compute.py
 src/voices/config.py
 src/voices/domain/__init__.py
 src/voices/domain/alignment_contracts.py
@@ -143,6 +148,9 @@ tests/test_clone_review_workflow.py
 tests/test_codex_environment.py
 tests/test_config.py
 tests/test_contracts.py
+tests/test_dgx_compute.py
+tests/test_dgx_engine.py
+tests/test_dgx_worker.py
 tests/test_create_contracts.py
 tests/test_edge_api.py
 tests/test_edge_compare.py

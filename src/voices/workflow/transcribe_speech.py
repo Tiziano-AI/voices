@@ -7,9 +7,11 @@ import numpy as np
 from pydantic import ValidationError
 
 from voices import config
+from voices.adapter.dgx_compute import execute
 from voices.adapter.ffmpeg_audio import convert_to_reference_audio
 from voices.adapter.mlx_stt import transcribe_audio
 from voices.adapter.model_snapshot import require_model_revision
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.audio_contracts import AudioIdentity
 from voices.domain.contracts import require_supported_language
 from voices.domain.errors import AudioConversionError, GenerationError, InvalidInputError
@@ -30,10 +32,12 @@ def _read_wav(path: Path) -> bytes:
     return content
 
 
-def transcribe_speech(*, audio: Path, language: str, model_revision: str) -> TranscriptionResult:
+def transcribe_speech(
+    *, audio: Path, language: str, model_revision: str, compute: ComputeSelection = LOCAL_COMPUTE
+) -> TranscriptionResult:
     """Recognize audio only; return provenance and leave source files untouched."""
-    model_id = config.STT_MODEL
-    revision = require_model_revision(model_revision)
+    model_id, selected_revision = compute.model("asr", model_revision)
+    revision = require_model_revision(selected_revision)
     language = require_supported_language(language)
     try:
         source = audio.expanduser().resolve()
@@ -53,11 +57,18 @@ def transcribe_speech(*, audio: Path, language: str, model_revision: str) -> Tra
         normalized_sha256=hashlib.sha256(normalized.tobytes(order="C")).hexdigest(),
         duration_seconds=normalized.size / config.STT_SAMPLE_RATE,
     )
-    runtime = get_runtime_identity()
-    draft = transcribe_audio(normalized, language, model_revision=revision, model_id=model_id)
+    if compute.backend == "dgx":
+        result = execute(
+            compute, "asr", language=language, audio=normalized.tobytes(), audio_format="f32le-16000", revision=revision
+        )
+        runtime, transcript = result.runtime, result.payload["transcript"]
+    else:
+        runtime = get_runtime_identity()
+        draft = transcribe_audio(normalized, language, model_revision=revision, model_id=model_id)
+        transcript = draft.transcript
     try:
         return TranscriptionResult(
-            transcript=draft.transcript,
+            transcript=transcript,
             language=language,
             model_id=model_id,
             model_revision=revision,

@@ -36,6 +36,7 @@ class UiConfigResponse(BaseModel):
     default_language: str = DEFAULT_LANGUAGE_LABEL
     base_model_id: str = config.BASE_MODEL
     base_model_revision: str = config.BASE_MODEL_REVISION
+    compute_backend: Literal["mlx", "dgx"] = "mlx"
     guided_record_target_seconds: float = config.GUIDED_RECORD_TARGET_SECONDS
     free_record_minimum_seconds: float = config.FREE_RECORD_MINIMUM_SECONDS
     guided_scripts: dict[str, str] = GUIDED_RECORDING_SCRIPTS

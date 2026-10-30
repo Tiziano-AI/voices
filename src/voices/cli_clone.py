@@ -127,6 +127,7 @@ def review_clone(
         resolved_transcript = require_non_empty_text("transcript", transcript) if transcript is not None else None
         fallback_name = resolved_name or default_display_name(audio.stem)
         prepared = prepare_clone_review(
+            compute=context.compute,
             audio_path=audio,
             library=lib,
             request=CloneReviewRequest(

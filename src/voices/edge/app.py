@@ -16,6 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 
 from voices import config
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.contracts import VoiceRecord
 from voices.domain.errors import InvalidInputError, OperationCancelledError, VoicesError
 from voices.edge.contracts import (
@@ -141,7 +142,9 @@ def _raise_if_cancelled(context: StudioContext, operation_token: str | None) -> 
         raise OperationCancelledError("Browser request was canceled before persistence.")
 
 
-def create_edge_app(*, library: Path, out_dir: Path, web_dist: Path | None = None) -> FastAPI:
+def create_edge_app(
+    *, library: Path, out_dir: Path, web_dist: Path | None = None, compute: ComputeSelection = LOCAL_COMPUTE
+) -> FastAPI:
     """Create the local studio FastAPI app for one configured library root."""
     app = FastAPI(title="voices studio", lifespan=_edge_lifespan)
     app.state.context = StudioContext(
@@ -149,6 +152,7 @@ def create_edge_app(*, library: Path, out_dir: Path, web_dist: Path | None = Non
         out_dir=out_dir,
         asset_store=StudioAssetStore(),
         cancellations=OperationCancellationRegistry(),
+        compute=compute,
     )
 
     @app.exception_handler(VoicesError)
@@ -187,7 +191,8 @@ def create_edge_app(*, library: Path, out_dir: Path, web_dist: Path | None = Non
 
     @app.get("/api/ui-config", response_model=UiConfigResponse)
     async def ui_config() -> UiConfigResponse:
-        return UiConfigResponse()
+        model, revision = compute.model("base")
+        return UiConfigResponse(base_model_id=model, base_model_revision=revision, compute_backend=compute.backend)
 
     @app.post("/api/operations/{operation_token}/cancel", status_code=status.HTTP_204_NO_CONTENT)
     async def operation_cancel(operation_token: str) -> Response:
@@ -352,11 +357,13 @@ def _open_browser(url: str) -> None:
     webbrowser.open(url)
 
 
-def launch_edge_server(*, library: Path, out_dir: Path, launch: LaunchOptions) -> None:
+def launch_edge_server(
+    *, library: Path, out_dir: Path, launch: LaunchOptions, compute: ComputeSelection = LOCAL_COMPUTE
+) -> None:
     """Launch the bundled local browser studio."""
     web_dist = resolve_web_dist()
     host = require_loopback_host(launch.host)
-    app = create_edge_app(library=library, out_dir=out_dir, web_dist=web_dist)
+    app = create_edge_app(library=library, out_dir=out_dir, web_dist=web_dist, compute=compute)
     url = loopback_url(host, launch.port)
     if launch.open_browser:
         opener = threading.Timer(interval=0.8, function=_open_browser, args=[url])

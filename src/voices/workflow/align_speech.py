@@ -8,10 +8,12 @@ import numpy as np
 from pydantic import ValidationError
 
 from voices import config
+from voices.adapter.dgx_compute import execute
 from voices.adapter.ffmpeg_audio import convert_to_reference_audio
 from voices.adapter.mlx_align import align_audio
 from voices.adapter.model_snapshot import require_model_revision
-from voices.domain.alignment_contracts import AlignmentResult
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
+from voices.domain.alignment_contracts import AlignmentResult, AlignmentWord
 from voices.domain.audio_contracts import AudioIdentity
 from voices.domain.contracts import require_non_empty_text, require_supported_language
 from voices.domain.errors import AudioConversionError, GenerationError, InvalidInputError, MissingDependencyError
@@ -27,14 +29,18 @@ def _read_file(path: Path, label: str) -> bytes:
         raise InvalidInputError(f"Cannot read {label.lower()} '{path}': {exc}") from exc
 
 
-def align_speech(*, audio: Path, text_file: Path, language: str, model_revision: str | None = None) -> AlignmentResult:
+def align_speech(
+    *,
+    audio: Path,
+    text_file: Path,
+    language: str,
+    model_revision: str | None = None,
+    compute: ComputeSelection = LOCAL_COMPUTE,
+) -> AlignmentResult:
     """Validate ingress before loading a model; leave all source files untouched."""
-    model_id = config.ALIGNER_MODEL
-    revision = require_model_revision(model_revision if model_revision is not None else config.ALIGNER_MODEL_REVISION)
+    model_id, selected_revision = compute.model("align", model_revision)
+    revision = require_model_revision(selected_revision)
     language = require_supported_language(language)
-    tokenizer = {"Japanese": "nagisa", "Korean": "soynlp"}.get(language)
-    if tokenizer and find_spec(tokenizer) is None:
-        raise MissingDependencyError(f"{language} forced alignment requires the optional '{tokenizer}' tokenizer.")
     try:
         text = _read_file(text_file, "Text file").decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -55,8 +61,24 @@ def align_speech(*, audio: Path, text_file: Path, language: str, model_revision:
         normalized_sha256=hashlib.sha256(normalized.tobytes(order="C")).hexdigest(),
         duration_seconds=normalized.size / config.ALIGNER_SAMPLE_RATE,
     )
-    runtime = get_runtime_identity()
-    words = align_audio(normalized, text, language, revision, model_id=model_id)
+    if compute.backend == "dgx":
+        result = execute(
+            compute,
+            "align",
+            language=language,
+            text=text,
+            audio=normalized.tobytes(),
+            audio_format="f32le-16000",
+            revision=revision,
+        )
+        runtime = result.runtime
+        words = [AlignmentWord.model_validate(value) for value in result.payload["words"]]
+    else:
+        tokenizer = {"Japanese": "nagisa", "Korean": "soynlp"}.get(language)
+        if tokenizer and find_spec(tokenizer) is None:
+            raise MissingDependencyError(f"{language} forced alignment requires the optional '{tokenizer}' tokenizer.")
+        runtime = get_runtime_identity()
+        words = align_audio(normalized, text, language, revision, model_id=model_id)
     try:
         return AlignmentResult(
             model_id=model_id,

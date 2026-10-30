@@ -11,7 +11,7 @@
 
 The loop creates/imports a reference through `design`, `clone` or `record`, reviews it, auditions lines and exports WAV/JSON provenance.
 
-`voices.edge` owns loopback HTTP, `web/` browser rendering, and `voices ui` launch. No hosted API, remote serving, or alternate persistence exists.
+`voices.edge` owns loopback HTTP, `web/` browser rendering, and `voices ui` launch. No hosted API, remote speech listener, or alternate persistence exists. Optional DGX compute uses the same workflows/store over existing SSH, never a replacement product.
 
 ## Runtime compatibility and source contracts
 
@@ -39,6 +39,7 @@ Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency
 | Browser studio | `web/src` | Owns launchpad, voice rail, audition workbench, Audition Board, transport/inspector, creation sheet, and palettes. `useStudioController` composes bootstrap, selection, freshness, and specialized owners; `useAudioSession` owns playback; `useAuditionBoard` owns candidates, stale/render state, and positions; `useRecorder` owns microphone acquisition, capture, metering, timers, and cleanup; `studioControllerTypes` owns the envelope; `StudioShell` owns composition only. |
 | Studio bundle | `voices.studio_bundle`, `pyproject.toml` build targets | Select installed `voices/web_dist` or editable `web/dist`; package generated assets in wheel and sdist. Missing assets fail before launch; runtime never builds them. |
 | MLX adapters | `voices.adapter.mlx_runtime`, `voices.adapter.mlx_qwen`, `voices.adapter.mlx_stt`, `voices.adapter.mlx_align`, `voices.adapter.model_snapshot` | Own immutable snapshot resolution, serialized inference and typed outputs. |
+| Optional compute | `voices.compute`, `voices.cli_compute`, `voices.adapter.dgx_{compute,worker,engine}` | Four complete-result operations over SSH, explicit selection, actual CUDA provenance, exact owned custody/settlement; no fallback/replay or provisioning. |
 | Runtime identity | `voices.runtime_identity` | Own selected dependency and source-byte identity, shared by doctor and generation-time provenance. |
 | Alignment contract | `voices.domain.alignment_contracts` | Own audio/text/model identity, word timings, and explicit non-verification semantics. |
 | Transcription contract | `voices.domain.transcription_contracts`, `voices.domain.audio_contracts` | Recognized text/model/runtime; shared audio identity. No library writes. |
@@ -48,6 +49,12 @@ Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency
 | Operator skill | `skills/voices-local-studio` | One canonical skill for portable/Claude plugins and explicit standalone sync; dev/release proof stays in docs/devtools. |
 | Public archives | `devtools/export_public.py`, `devtools/public-source-files.txt` | Export only named regular blobs from HEAD, excluding history, local state, historical release records and unadmitted media. |
 | Codex projection | `.codex/environments/environment.toml` | Owns app top-bar setup, build, gate, and safe CLI actions only. |
+
+## Optional DGX compute contract
+
+[Existing-audio and compute contracts](docs/audio-inference.md) own backend
+selection, captured inputs, actual runtime provenance and same-invocation
+settlement/recovery. Mac storage/devices retain their existing owners.
 
 ## Operator skill package
 
@@ -119,13 +126,9 @@ Render publication is serialized per `./outputs/<voice_id>/`; concurrent renders
 
 ## Canonical audio review path
 
-After any non-design ingress produces an audio file, both the CLI and the browser studio must call the same post-capture review owner: `voices.workflow.clone_voice`.
-
-- `review_policy="import"` covers imported clone audio and does not enforce an extra minimum duration
-- `review_policy="record_guided"` covers guided recording and reuses the same transcript-review and save path without an extra minimum
-- `review_policy="record_free"` covers free recording and enforces the product minimum before transcript review is allowed
-- the only legal persistence step after review is `clone_reference_voice`, so `record` and `clone` save the same persisted voice kind
-- browser review tokens are single-spend. The save path claims one token exclusively before persistence, releases that claim only when persistence fails, and retires the token plus temp audio immediately after one successful save so concurrent saves cannot duplicate one approved take
+All non-design ingress uses `voices.workflow.clone_voice` for review/save;
+[the audio contract](docs/audio-inference.md#capture-and-review) owns policies,
+minimums and single-spend tokens. Optional compute does not change this path.
 
 ## Local HTTP contracts
 

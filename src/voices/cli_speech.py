@@ -41,6 +41,7 @@ def register_speech_commands(root: typer.Typer) -> None:
                     text=spoken_text,
                     language=language,
                     library=lib,
+                    compute=context.compute,
                 )
                 wav_path = Path(temp_dir_name) / "say.wav"
                 write_wav(wav_path, audio_data, sample_rate)
@@ -80,6 +81,7 @@ def register_speech_commands(root: typer.Typer) -> None:
                 library=get_library_path(library),
                 out_dir=out_dir,
                 model_revision=model_revision,
+                compute=context.compute,
             )
             if context.json_output:
                 artifact = output_artifact_for_name(out_dir, voice_id, wav_path.name)

@@ -7,7 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from voices.domain.errors import MissingDependencyError
 
@@ -26,6 +26,20 @@ SELECTED_RUNTIME_PACKAGES = (
 )
 
 
+class ComputeRuntimeIdentity(BaseModel):
+    """Actual optional remote checkpoint and controls; no client MLX attribution."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    backend: Literal["dgx"]
+    invocation: str = Field(pattern=r"^[0-9a-f]{32}$")
+    model_id: str
+    model_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    image: str
+    cuda: dict[str, JsonValue]
+    controls: dict[str, JsonValue]
+
+
 class RuntimeIdentity(BaseModel):
     """Portable source identity plus the actual interpreter and dependency versions."""
 
@@ -36,9 +50,12 @@ class RuntimeIdentity(BaseModel):
     platform: str
     voices_version: str
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    source_scope: Literal["installed-python-source-at-observation"] = "installed-python-source-at-observation"
+    source_scope: Literal["installed-python-source-at-observation", "dgx-worker-source-at-execution"] = (
+        "installed-python-source-at-observation"
+    )
     packages: dict[str, str]
     package_scope: Literal["selected-runtime-dependencies"] = "selected-runtime-dependencies"
+    compute: ComputeRuntimeIdentity | None = None
 
 
 def source_sha256(package_root: Path) -> str:

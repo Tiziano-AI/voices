@@ -89,6 +89,7 @@ def design(
             language=resolved_language,
             library=lib,
             overwrite=overwrite,
+            compute=context.compute,
         )
         if context.json_output:
             emit_json(
@@ -167,6 +168,7 @@ def design_batch(
                 default_language=resolved_language,
                 library=lib,
                 overwrite=overwrite,
+                compute=context.compute,
             )
         if context.json_output:
             success_items: list[dict[str, object]] = [

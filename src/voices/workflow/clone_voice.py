@@ -6,8 +6,10 @@ from pathlib import Path
 import numpy as np
 
 from voices import config
+from voices.adapter.dgx_compute import execute
 from voices.adapter.ffmpeg_audio import convert_to_reference_audio
 from voices.adapter.mlx_stt import transcribe_audio
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.contracts import (
     ClonedVoiceSource,
     VoiceDraft,
@@ -102,10 +104,21 @@ def transcribe_clone_audio(
     *,
     audio_path: Path,
     language: str,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> TranscriptionDraft:
     """Transcribe one clone reference candidate through the canonical STT path."""
     resolved_language = require_supported_language(language)
     normalized_audio = _require_decoded_audio(convert_to_reference_audio(audio_path, config.STT_SAMPLE_RATE))
+    if compute.backend == "dgx":
+        result = execute(
+            compute,
+            "asr",
+            language=resolved_language,
+            audio=normalized_audio.astype("<f4").tobytes(),
+            audio_format="f32le-16000",
+        )
+        duration = float(normalized_audio.size) / config.STT_SAMPLE_RATE
+        return _review_draft_from_transcript(result.payload["transcript"], resolved_language, duration)
     return transcribe_audio(normalized_audio, resolved_language)
 
 
@@ -131,6 +144,7 @@ def prepare_clone_review(
     audio_path: Path,
     library: Path,
     request: CloneReviewRequest,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> PreparedCloneReview:
     """Normalize one imported or recorded clip and project the canonical review payload."""
     normalized_audio = _require_decoded_audio(convert_to_reference_audio(audio_path, config.FALLBACK_SAMPLE_RATE))
@@ -141,7 +155,7 @@ def prepare_clone_review(
             f"Recorded take must be at least {minimum_duration_seconds:.0f}s before transcript review."
         )
     if request.transcript is None:
-        draft = transcribe_clone_audio(audio_path=audio_path, language=request.language)
+        draft = transcribe_clone_audio(audio_path=audio_path, language=request.language, compute=compute)
     else:
         draft = _review_draft_from_transcript(request.transcript, request.language, duration_seconds)
     requested_name = request.requested_name or request.fallback_name

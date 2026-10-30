@@ -4,7 +4,8 @@
 
 Create reusable voices, try real lines, and keep the performance you like.
 Voices runs Qwen3-TTS on your Apple Silicon Mac through MLX, with a browser
-studio for listening and comparison and a CLI for scripting.
+studio for listening and comparison and a CLI for scripting. MLX remains the
+default; [optional DGX compute](#optional-dgx-compute) uses the same product.
 
 Design a synthetic voice or import a recording you have permission to use.
 Saved voices are reference audio and transcripts, not trained models. Speech
@@ -49,6 +50,12 @@ A prebuilt wheel includes the UI and needs neither Node nor pnpm. See
 command does not change when you edit source or run `uv sync`; see
 [global installation](devtools/README.md#repository-and-global-command).
 Models use pinned, immutable revisions in the standard shared Hugging Face cache.
+
+## Optional DGX compute
+
+MLX stays default. Explicit `--compute dgx --dgx-host ALIAS
+[--dgx-ssh-config PATH]` selects four operations for one CLI/studio session.
+See [selection, prerequisites and recovery](docs/audio-inference.md#optional-dgx-compute).
 
 ## First saved result
 
@@ -260,16 +267,9 @@ uv run voices render noir_narrator --text-file ./line.txt --play
 
 ### `transcribe` and `align`
 
-`transcribe --audio WAV --language English --model-revision SHA` recognizes
-words without a supplied transcript. All options are required; use public
-language names such as `English` or `Italian`. `align --audio PATH --text-file
-PATH --language English [--model-revision SHA]` estimates supplied-word times
-and explicitly does not verify spoken content.
-
-Both return audio/model/runtime identity under global `--json`, use local
-inference and may download a pinned model. Neither captures, plays or saves
-audio, voices or review files. See [existing-audio inference](docs/audio-inference.md)
-for copyable pinned examples, JSON fields, language dependencies and claim limits.
+Audio-only `transcribe` recognizes existing WAV; `align` estimates supplied-word
+times without verifying speech. See [commands, immutable revisions, JSON and
+limits](docs/audio-inference.md). Neither captures, plays or saves audio.
 
 ### `list`, `resolve`, `show`, `outputs`, and `delete`
 

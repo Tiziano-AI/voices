@@ -168,6 +168,17 @@ missing raw correction diagnostics explicit.
 
 ## Opt-in real models
 
+Optional DGX source qualification uses the same CLI/loopback studio with an
+isolated library, outputs and `--compute-state`, existing SSH, retained pinned
+checkpoints and the two CUDA overlays. Do not install the MLX-dependent wheel
+on DGX or run the downloading MLX qualification below as a substitute. Exercise
+design/review/save, Base with different text, exact-preview repeated export,
+independent ASR and separate alignment; keep cancellation/publication and
+disconnect/recovery separate from GPU interruption. Preserve invocation identity
+and settle naturally before operator-owned retained-lane restoration. Generated
+audio/transcripts and private receipts are not public source or quality votes.
+Source development does not update the globally installed command.
+
 Only with explicit intent for model downloads, inference, and new test assets:
 
 ```bash

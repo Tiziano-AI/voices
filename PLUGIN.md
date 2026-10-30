@@ -25,6 +25,11 @@ Install the CLI independently using its source/build instructions, then resolve
 `command -v voices` and run `voices --json doctor`. Doctor inspects setup without
 loading a model; it does not prove inference or audible quality.
 
+The CLI also supports explicitly selected internal DGX compute over existing
+SSH; Mac MLX remains default. This plugin does not provision its cached CUDA
+foundation, admit a DGX lane or change access/defaults. Capture, review, library,
+playback and saving stay on Mac; see the CLI's optional-compute contract.
+
 ## Try it
 
 - “Find a saved voice that would suit this narration.”

@@ -11,6 +11,7 @@ from rich.table import Table
 from voices import config
 from voices.adapter.ffmpeg_audio import free_recording, record_guided_audio
 from voices.cli_support import console, err_console, play_wav
+from voices.compute import LOCAL_COMPUTE, ComputeSelection
 from voices.domain.create_contracts import CloneReviewRequest, TranscriptionDraft, get_guided_recording_script
 from voices.domain.errors import InvalidInputError, VoicesError
 from voices.workflow.clone_voice import prepare_clone_review
@@ -150,6 +151,7 @@ def record_and_review(
     language: str,
     script: str | None,
     library: Path,
+    compute: ComputeSelection = LOCAL_COMPUTE,
 ) -> str:
     """Record one or more takes until the operator approves a transcript."""
     review_policy = "record_guided" if mode == "guided" else "record_free"
@@ -161,7 +163,9 @@ def record_and_review(
     while True:
         _capture_recording(audio_path=audio_path, mode=mode, language=language, script=script)
         try:
-            prepared = prepare_clone_review(audio_path=audio_path, library=library, request=review_request)
+            prepared = prepare_clone_review(
+                audio_path=audio_path, library=library, request=review_request, compute=compute
+            )
         except InvalidInputError as error:
             err_console.print(f"[bold red]Error:[/] {error}")
             console.print("[dim]Recording again.[/]")

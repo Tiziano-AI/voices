@@ -45,6 +45,7 @@ def register_diagnostic_commands(root: typer.Typer) -> None:
                 library=lib,
                 out_dir=DEFAULT_OUTPUT_DIR,
                 launch=LaunchOptions(host=resolved_host, port=port, open_browser=not no_open),
+                compute=context.compute,
             )
 
         run_cli_action(context, run)
@@ -56,7 +57,9 @@ def register_diagnostic_commands(root: typer.Typer) -> None:
 
         def run() -> None:
             if context.json_output:
-                emit_json(_doctor_payload(library))
+                payload = _doctor_payload(library)
+                payload["compute"] = context.compute.describe()
+                emit_json(payload)
                 return
 
             lib = get_library_path(library)
@@ -75,6 +78,10 @@ def register_diagnostic_commands(root: typer.Typer) -> None:
             runtime = get_runtime_identity()
             table.add_row("python", f"{runtime.python} ({runtime.executable})")
             table.add_row("source", runtime.source_sha256)
+            table.add_row(
+                "compute",
+                context.compute.backend + (f" ({context.compute.ssh_host})" if context.compute.ssh_host else ""),
+            )
             table.add_row("model cache", str(Path(HF_HUB_CACHE).expanduser().resolve()))
             console.print(table)
 

@@ -124,6 +124,8 @@ class DesignVoiceSource(BaseModel):
     kind: Literal["design"]
     model_id: str
     instruct: str
+    model_revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    runtime: RuntimeIdentity | None = None
 
     @field_validator("model_id")
     @classmethod

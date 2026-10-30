@@ -31,7 +31,9 @@ def register_transcription_commands(root: typer.Typer) -> None:
         context = context_from_typer(ctx)
 
         def run() -> None:
-            result = transcribe_speech(audio=audio, language=language, model_revision=model_revision)
+            result = transcribe_speech(
+                audio=audio, language=language, model_revision=model_revision, compute=context.compute
+            )
             if context.json_output:
                 emit_json(model_object(result))
                 return

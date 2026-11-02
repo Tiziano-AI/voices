@@ -9,17 +9,131 @@ import hashlib
 import json
 import os
 import shlex
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 IMAGE: str = "nvcr.io/nvidia/vllm@sha256:cb38bbefdbc3e9fe045f931dd72cbd58cd48985c7e09916bcc6c15c10f39b929"
 
 
+def admission(base: Path) -> IO[str]:
+    lock = os.fdopen(os.open(base / "admission.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "a")
+    try:
+        info = os.fstat(lock.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+            raise RuntimeError("Unsafe Voices admission lock")
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock
+    except BaseException:
+        lock.close()
+        raise
+
+
+def private_read(path: Path) -> bytes:
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise RuntimeError("Unsafe Voices custody file")
+    return path.read_bytes()
+
+
+def terminal_binding(root: Path) -> dict[str, Any]:
+    """Custody clearance is not an audio-quality judgment. Unknown never clears."""
+    info = root.lstat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise RuntimeError("Unsafe Voices invocation directory")
+    request = private_read(root / "request.json")
+    terminal = private_read(root / "terminal.json")
+    value = json.loads(terminal)
+    if (
+        json.loads(request).get("invocation") != root.name
+        or value.get("invocation") != root.name
+        or value.get("state") not in ("completed", "failed")
+        or value.get("owned_container_absent") is not True
+        or value.get("automatic_replay") is not False
+    ):
+        raise RuntimeError("Voices exact invocation requires settlement")
+    return {
+        "schema": 1,
+        "invocation": root.name,
+        "request_sha256": hashlib.sha256(request).hexdigest(),
+        "terminal_sha256": hashlib.sha256(terminal).hexdigest(),
+        "state": value["state"],
+    }
+
+
+def current_write(base: Path, value: dict[str, Any]) -> None:
+    """Only the admission-lock holder publishes current custody, never history."""
+    invocation = value["invocation"]
+    if not isinstance(invocation, str) or len(invocation) != 32 or any(c not in "0123456789abcdef" for c in invocation):
+        raise ValueError("Exact current invocation required")
+    publish(base / "current.json", value, base / invocation, replace=True)
+
+
+def publish(path: Path, value: object, scratch: Path, *, replace: bool = False) -> None:
+    """Commit complete JSON atomically; interrupted scratch stays invocation-local."""
+    descriptor, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".partial", dir=scratch)
+    temporary = Path(name)
+    with os.fdopen(descriptor, "w") as stream:
+        json.dump(value, stream, ensure_ascii=False, allow_nan=False)
+        stream.flush()
+        os.fsync(stream.fileno())
+    if replace:
+        os.replace(temporary, path)
+    else:
+        os.link(temporary, path)  # Atomic no-overwrite publication, including concurrent callers.
+        temporary.unlink()
+    for directory in {path.parent, scratch}:
+        descriptor = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
+def baseline_clearance(base: Path, pending: str | None = None) -> None:
+    """Called under admission.lock; read one current invocation, not old audio."""
+    pointer = base / "current.json"
+    if not pointer.exists():
+        # A first staged request has acquired no GPU custody. Legacy use must
+        # be explicitly reconciled; a reboot/unlocked flock cannot clear it.
+        if any(p.name not in ("admission.lock", pending) for p in base.iterdir()):
+            raise RuntimeError("Voices legacy custody requires exact reconciliation")
+        return
+    current = json.loads(private_read(pointer))
+    invocation = current.get("invocation")
+    if not isinstance(invocation, str) or len(invocation) != 32 or any(c not in "0123456789abcdef" for c in invocation):
+        raise RuntimeError("Voices current invocation unknown")
+    if current != terminal_binding(base / invocation):
+        raise RuntimeError("Voices current custody requires same-invocation settlement")
+
+
+def reconcile_custody(base: Path, invocations: list[str]) -> None:
+    """One explicit legacy adoption, after exact invocations have been settled.
+
+    Compare only the immediate inventory with the operator's exact list; never
+    recursively inspect audio/results, settle unknown work or generate again.
+    """
+    if (
+        not invocations
+        or len(set(invocations)) != len(invocations)
+        or any(len(i) != 32 or any(c not in "0123456789abcdef" for c in i) for i in invocations)
+    ):
+        raise ValueError("Exact legacy invocation identities required")
+    with admission(base):
+        if (base / "current.json").exists():
+            raise RuntimeError("Current custody already exists; use same-invocation settlement")
+        if {p.name for p in base.iterdir()} != set(invocations) | {"admission.lock"}:
+            raise RuntimeError("Legacy inventory differs; integration required")
+        bindings = [terminal_binding(base / invocation) for invocation in invocations]
+        current_write(base, bindings[-1])
+
+
 def save(path: Path, value: object) -> None:
-    with path.open("x") as stream:
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as stream:
         json.dump(value, stream, ensure_ascii=False, allow_nan=False)
         stream.flush()
         os.fsync(stream.fileno())
@@ -126,7 +240,7 @@ def publish_terminal(root: Path, code: int | None, seconds: float) -> None:
     outcome = "completed" if code == 0 and (root / "result.json").is_file() else "failed"
     if code is None and (root / "create-intent.json").is_file():
         outcome = "unknown"
-    save(
+    publish(
         root / "terminal.json",
         {
             "state": outcome,
@@ -136,21 +250,26 @@ def publish_terminal(root: Path, code: int | None, seconds: float) -> None:
             "operation_seconds": seconds,
             "automatic_replay": False,
         },
+        root,
     )
 
 
 def settle(root: Path) -> None:
     """Explicit recovery after owner loss; never create/start/resubmit inference."""
-    if (root / "terminal.json").is_file():
-        return
     if state(root).get("owner_alive"):
         raise RuntimeError("Original owner is alive; observe it instead of taking custody")
-    with (root.parent / "admission.lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    with admission(root.parent):
+        pointer = root.parent / "current.json"
+        current = json.loads(private_read(pointer)) if pointer.exists() else None
+        if current and current.get("invocation") != root.name:
+            raise RuntimeError("Another current invocation owns admission; integration required")
         started = time.monotonic()
         digest = hashlib.sha256((root / "request.json").read_bytes()).hexdigest()
-        code = settle_container(root, digest)
-        publish_terminal(root, code, time.monotonic() - started)
+        if not (root / "terminal.json").is_file():
+            code = settle_container(root, digest)
+            publish_terminal(root, code, time.monotonic() - started)
+        if current:
+            current_write(root.parent, terminal_binding(root))
 
 
 def run(root: Path) -> None:
@@ -164,9 +283,12 @@ def run(root: Path) -> None:
     creation_intent = False
     code = None
     lock = None
+    admitted = False
     try:
-        lock = (root.parent / "admission.lock").open("a")
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock = admission(root.parent)
+        baseline_clearance(root.parent, pending=root.name)
+        current_write(root.parent, {"schema": 1, "invocation": root.name, "request_sha256": digest, "state": "running"})
+        admitted = True
         if inspect(name) is not None:
             raise RuntimeError("Preexisting container: not acquired by this invocation")
         retained = inspect("dgx-inference")
@@ -251,6 +373,8 @@ def run(root: Path) -> None:
             if creation_intent:
                 code = settle_container(root, digest)
             publish_terminal(root, code, time.monotonic() - started)
+            if admitted and read(root / "terminal.json")["state"] != "unknown":
+                current_write(root.parent, terminal_binding(root))
         finally:
             if lock is not None:
                 lock.close()
@@ -258,8 +382,16 @@ def run(root: Path) -> None:
 
 def main() -> None:
     os.umask(0o077)
-    operation, raw_root = sys.argv[1:]
+    operation, raw_root, *legacy = sys.argv[1:]
     root = Path(raw_root).resolve()
+    if operation == "reconcile-custody":
+        if root != Path.home() / ".local/state/voices/compute":
+            raise ValueError("Invalid compute custody root")
+        reconcile_custody(root, legacy)
+        print(json.dumps({"state": "cleared", "automatic_replay": False}))
+        return
+    if legacy:
+        raise ValueError("Unexpected worker arguments")
     if (
         root.parent != Path.home() / ".local/state/voices/compute"
         or len(root.name) != 32

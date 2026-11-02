@@ -52,9 +52,10 @@ Python manifests/lock and `web/package.json`/`web/pnpm-lock.yaml` own dependency
 
 ## Optional DGX compute contract
 
-[Existing-audio and compute contracts](docs/audio-inference.md) own backend
-selection, captured inputs, actual runtime provenance and same-invocation
-settlement/recovery. Mac storage/devices retain their existing owners.
+[Audio/compute](docs/audio-inference.md) owns inputs, provenance and settlement;
+Mac owns storage/devices. Worker `current.json` under `admission.lock` clears
+only exact settled custody, never unknown work. Serving reliance requires
+deployment and explicit legacy reconciliation, not an audio-history scan.
 
 ## Operator skill package
 

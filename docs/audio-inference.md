@@ -42,6 +42,29 @@ GPU work. Inspect/settle the original invocation before further work; an
 unknown outcome is not permission to generate again. No streaming guarantee
 or audible quality acceptance follows from a complete result.
 
+The worker maintains bounded `current.json` custody under the existing remote
+`admission.lock`. A new admitted invocation replaces that pointer before any
+GPU effect; only a completed/failed terminal with exact request/terminal hashes
+and settled owned child clears it. Unknown/nonterminal state survives process
+loss or reboot. `settle` can finish a lost terminal-pointer publication without
+regenerating. A rejected contender never replaces another invocation's pointer.
+Terminal JSON is published atomically without overwrite; current-pointer
+replacement uses scratch inside that exact invocation. Interrupted unpublished
+writes remain local to it, so same-invocation settlement or exact legacy
+reconciliation can finish without replay or ignoring unknown root entries.
+The serving owner may consume this schema-1 clearance while holding the same
+lock; it does not inspect audio or judge its quality.
+
+Legacy compute roots without a pointer need one explicit operator reconciliation
+after pending old workers and each exact invocation are settled. The current
+worker's host-local `reconcile-custody <compute-root> <exact-invocation> ...`
+compares the supplied immediate invocation inventory, validates only their
+request/terminal custody, and publishes one current pointer. Missing or unknown
+terminals refuse; it neither recursively scans results nor settles unknown
+audio automatically. Deploy the updated submitting CLI before admitting new
+work; old staged worker bytes and original evidence remain immutable. This is
+source support, not evidence that an existing DGX has been reconciled/updated.
+
 ### Remote execution and input contract
 
 Base receives captured reference WAV bytes and the approved transcript with

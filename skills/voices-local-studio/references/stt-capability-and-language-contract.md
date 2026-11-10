@@ -2,8 +2,9 @@
 
 ## Local runtime posture
 
-- the local product uses MLX-native STT capability rather than a hosted transcription dependency
-- STT assists clone and record review and recognizes existing WAVs through public `transcribe`; it uses the same ASR adapter and shared runtime
+- the product defaults to MLX-native STT rather than a hosted transcription dependency; explicit DGX selects retained offline ASR without fallback
+- STT assists clone and record review and recognizes existing WAVs through public `transcribe`; each uses the selected backend, with the shared serialized runtime on MLX and the retained audio overlay on DGX
+- choose the selected backend's immutable revision from doctor's `compute.models`; never reuse an MLX revision for DGX
 
 ## Product contract
 

@@ -6,6 +6,7 @@ This skill is local-product-first. Use this matrix to avoid conflation.
 | --- | --- | --- | --- |
 | Local `voices` product | Single installed CLI, resolved with `command -v voices` | Yes | Doctor identifies the selected runtime; other projects must not supply private Voices environments or caches. |
 | Local `mlx-audio` runtime | The installed MLX Qwen implementation behind the repo | Yes, as runtime evidence | Proves what the local product can actually call. |
+| Explicit DGX compute | Retained offline CUDA foundation selected through the installed CLI | Yes, when selected | `compute.models` supplies its revisions; remote results carry checkpoint/worker/CUDA identity. Local MLX runtime evidence proves no DGX readiness. |
 | Official Qwen open-source docs/examples | Upstream Qwen README and examples | No | Useful for capabilities, patterns, and terminology comparison. |
 | Hosted Alibaba Model Studio docs | Hosted API docs for Voice Design, voice clone, and instruction control | No | Useful for best practices and hosted-only distinctions, not as local product truth. |
 

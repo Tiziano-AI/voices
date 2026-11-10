@@ -16,6 +16,11 @@ preview you heard rather than generating it again.
 [Commands](#command-reference) · [Agent plugin](PLUGIN.md) ·
 [Development](devtools/README.md)
 
+## Release 0.3.0
+
+Adds DGX compute and recovery without replay or fallback. Microphone behavior,
+quality and recognition accuracy need separate acceptance.
+
 ## Requirements
 
 - Apple Silicon Mac

@@ -23,7 +23,7 @@ def _run(*arguments: str) -> subprocess.CompletedProcess[str]:
     ("arguments", "message"),
     [
         (["--not-an-option"], "No such option"),
-        (["ui", "--port", "not-a-number"], "not a valid int"),
+        (["ui", "--port", "not-a-number"], "valid integer"),
         (["show", "--not-an-option"], "No such option"),
         (["--compute", "dgx", "languages"], "explicit SSH host alias"),
     ],

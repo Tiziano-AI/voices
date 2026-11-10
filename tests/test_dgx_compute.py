@@ -4,7 +4,9 @@ import hashlib
 import io
 import json
 import tarfile
+from contextlib import contextmanager
 from dataclasses import replace
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -12,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from helpers import seed_voice
 
-from voices.adapter import dgx_compute
+from voices.adapter import dgx_compute, dgx_worker
 from voices.compute import DGX_MODELS, ComputeSelection
 from voices.domain.errors import GenerationError, InvalidInputError
 from voices.edge.app import create_edge_app
@@ -106,8 +108,9 @@ def recovery_fixture(tmp_path, monkeypatch):
     invocation = "a" * 32
     selection = ComputeSelection("dgx", "dgx-b", state_root=tmp_path)
     root = tmp_path / invocation
-    root.mkdir()
+    root.mkdir(parents=True)
     request = {
+        "invocation": invocation,
         "operation": "asr",
         "model_id": DGX_MODELS["asr"][0],
         "revision": DGX_MODELS["asr"][1],
@@ -127,6 +130,10 @@ def recovery_fixture(tmp_path, monkeypatch):
         calls.append(command)
         if " inspect " in command:
             return b'{"state":"completed","owned_container_absent":true}'
+        if " collect " in command:
+            assert command == "python3 - collect /same/id"
+            assert data == Path(dgx_worker.__file__).read_bytes()
+            return b'{"state":"completed","owned_container_absent":true}'
         assert command == "cat /same/id/result.json"
         return json.dumps(result).encode()
 
@@ -141,6 +148,63 @@ def test_recovery_collects_same_occurrence_without_publication_or_submission(tmp
     assert sorted(path.name for path in tmp_path.iterdir()) == [invocation]
     with pytest.raises(InvalidInputError, match="original SSH"):
         dgx_compute.inspect_invocation(replace(selection, ssh_host="other"), invocation)
+
+
+@pytest.mark.parametrize("completed", [True, False])
+@pytest.mark.parametrize("custody", ["stale", "historical", "changed_during_admission"])
+def test_collection_repairs_terminal_custody_without_replay_or_rewriting_staged_worker(
+    tmp_path, monkeypatch, completed, custody
+):
+    selection, invocation, result, _calls = recovery_fixture(tmp_path / "local", monkeypatch)
+    local = selection.state_root / invocation
+    remote = tmp_path / "remote" / invocation
+    remote.mkdir(parents=True, mode=0o700)
+    dgx_worker.save(remote / "request.json", json.loads((local / "request.json").read_bytes()))
+    (remote / "result.json").write_text(json.dumps(result))
+    staged = remote / "dgx_worker.py"
+    staged.write_bytes(b"original staged generation worker; never rewritten")
+    original = staged.read_bytes()
+    dgx_worker.publish_terminal(remote, 0 if completed else 1, 0)
+    stale = {"schema": 1, "invocation": invocation, "state": "running"}
+    later = {"schema": 1, "invocation": "c" * 32, "state": "running"}
+    (remote.parent / later["invocation"]).mkdir(mode=0o700)
+    dgx_worker.current_write(remote.parent, later if custody == "historical" else stale)
+    (local / "selection.json").write_text(json.dumps({"host": "dgx-b", "ssh_config": None, "remote": str(remote)}))
+    admit = dgx_worker.admission
+
+    @contextmanager
+    def admission(base):
+        assert custody != "historical", "Historical collection must not acquire another invocation's lane"
+        with admit(base) as lock:
+            if custody == "changed_during_admission":
+                dgx_worker.current_write(base, later)
+            yield lock
+
+    monkeypatch.setattr(dgx_worker, "admission", admission)
+    monkeypatch.setattr(dgx_worker, "docker", lambda *_: pytest.fail("Collection must not regenerate"))
+
+    def ssh(_selection, command, data=None):
+        if " inspect " in command:
+            return json.dumps(dgx_worker.state(remote)).encode()
+        if command == f"python3 - collect {remote}":
+            assert data == Path(dgx_worker.__file__).read_bytes()
+            dgx_worker.collect(remote)
+            return json.dumps(dgx_worker.state(remote)).encode()
+        assert command == f"cat {remote}/result.json"
+        return (remote / "result.json").read_bytes()
+
+    monkeypatch.setattr(dgx_compute, "_ssh", ssh)
+    if completed:
+        assert dgx_compute.recover_invocation(selection, invocation).payload["transcript"] == "Synthetic."
+    else:
+        with pytest.raises(GenerationError, match="not completed/settled"):
+            dgx_compute.recover_invocation(selection, invocation)
+        assert not (local / "result.json").exists()
+    if custody == "stale":
+        dgx_worker.baseline_clearance(remote.parent)
+    else:
+        assert dgx_worker.read(remote.parent / "current.json") == later
+    assert staged.read_bytes() == original
 
 
 def test_collection_rejects_corrupt_existing_receipt_instead_of_skipping_it(tmp_path, monkeypatch):

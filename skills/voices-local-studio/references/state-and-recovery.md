@@ -2,7 +2,33 @@
 
 ## Check the selected installation
 - Resolve the installed `voices` command and inspect doctor identity first; source docs explain behavior but do not prove the selected installation.
-- Use the standard shared model cache with immutable revisions. If installation/cache selection differs from the canonical contract, report the discrepancy; do not provision a private source/Python/venv, duplicate cache or fallback.
+- MLX uses the standard shared model cache with immutable revisions; explicit DGX uses retained offline checkpoints. If installation/cache selection differs from the canonical contract, report the discrepancy; do not provision a private source/Python/venv, duplicate cache or fallback.
+
+## Interrupted DGX work
+
+An interrupted SSH call names its retained invocation and private custody root
+(default `~/.local/state/voices/compute`). Keep that identity and use the same
+SSH selection and, if originally set, `--compute-state <root>`:
+
+```bash
+voices --compute dgx --dgx-host <existing-alias> --dgx-ssh-config <existing-config> \
+  --json compute inspect <invocation>
+voices --compute dgx --dgx-host <existing-alias> --dgx-ssh-config <existing-config> \
+  --json compute collect <invocation>
+```
+
+Inspect/collect act on the original invocation: neither resubmits, falls back to
+MLX, saves a voice nor publishes an output. Collection may wait and settle its
+exact owned child after dead-owner cleanup failure; live or ambiguous ownership
+fails closed. Already-collected local bytes must match the fetched receipt.
+Keep custody intact and report unresolved ownership rather than clearing it or
+starting replacement work.
+
+Cancellation can suppress publication while accepted GPU work continues. Settle
+the original invocation before further work, even for audio-only ASR/alignment;
+an unknown outcome never authorizes generation again. A complete result proves
+neither streaming behavior nor audible quality, and collected bytes are not a
+saved library voice or published render.
 
 ## Studio lifecycle
 

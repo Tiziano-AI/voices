@@ -1,8 +1,4 @@
-"""Dependency-separated SSH worker custody; no Voices/MLX install on DGX.
-
-The existing DGX lifecycle must admit a vacant lane first. This worker never
-stops another container, changes a serving profile or installs anything.
-"""
+"""SSH custody on an operator-admitted DGX lane; no provisioning or foreign cleanup."""
 
 import fcntl
 import hashlib
@@ -41,7 +37,7 @@ def private_read(path: Path) -> bytes:
 
 
 def terminal_binding(root: Path) -> dict[str, Any]:
-    """Custody clearance is not an audio-quality judgment. Unknown never clears."""
+    """Validate exact terminal custody."""
     info = root.lstat()
     if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
         raise RuntimeError("Unsafe Voices invocation directory")
@@ -66,7 +62,7 @@ def terminal_binding(root: Path) -> dict[str, Any]:
 
 
 def current_write(base: Path, value: dict[str, Any]) -> None:
-    """Only the admission-lock holder publishes current custody, never history."""
+    """Publish current custody under admission.lock."""
     invocation = value["invocation"]
     if not isinstance(invocation, str) or len(invocation) != 32 or any(c not in "0123456789abcdef" for c in invocation):
         raise ValueError("Exact current invocation required")
@@ -74,7 +70,7 @@ def current_write(base: Path, value: dict[str, Any]) -> None:
 
 
 def publish(path: Path, value: object, scratch: Path, *, replace: bool = False) -> None:
-    """Commit complete JSON atomically; interrupted scratch stays invocation-local."""
+    """Publish atomic JSON with local scratch."""
     descriptor, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".partial", dir=scratch)
     temporary = Path(name)
     with os.fdopen(descriptor, "w") as stream:
@@ -84,7 +80,7 @@ def publish(path: Path, value: object, scratch: Path, *, replace: bool = False) 
     if replace:
         os.replace(temporary, path)
     else:
-        os.link(temporary, path)  # Atomic no-overwrite publication, including concurrent callers.
+        os.link(temporary, path)  # Atomic no-overwrite publication.
         temporary.unlink()
     for directory in {path.parent, scratch}:
         descriptor = os.open(directory, os.O_RDONLY)
@@ -95,11 +91,10 @@ def publish(path: Path, value: object, scratch: Path, *, replace: bool = False) 
 
 
 def baseline_clearance(base: Path, pending: str | None = None) -> None:
-    """Called under admission.lock; read one current invocation, not old audio."""
+    """Validate current clearance under admission.lock."""
     pointer = base / "current.json"
     if not pointer.exists():
-        # A first staged request has acquired no GPU custody. Legacy use must
-        # be explicitly reconciled; a reboot/unlocked flock cannot clear it.
+        # First staging is not GPU custody; older inventory needs explicit reconciliation.
         if any(p.name not in ("admission.lock", pending) for p in base.iterdir()):
             raise RuntimeError("Voices legacy custody requires exact reconciliation")
         return
@@ -112,11 +107,7 @@ def baseline_clearance(base: Path, pending: str | None = None) -> None:
 
 
 def reconcile_custody(base: Path, invocations: list[str]) -> None:
-    """One explicit legacy adoption, after exact invocations have been settled.
-
-    Compare only the immediate inventory with the operator's exact list; never
-    recursively inspect audio/results, settle unknown work or generate again.
-    """
+    """Adopt exact settled legacy inventory, without scanning audio or settling work."""
     if (
         not invocations
         or len(set(invocations)) != len(invocations)
@@ -196,7 +187,7 @@ def owned_container(root: Path, name: str, digest: str) -> dict[str, Any] | None
 
 
 def settle_container(root: Path, digest: str) -> int | None:
-    """Reconcile only this durable create intent, including lost cleanup receipts."""
+    """Reconcile this exact create intent and lost cleanup receipts."""
     intent_path = root / "create-intent.json"
     if not intent_path.is_file():
         return None  # This invocation acquired no container.
@@ -224,7 +215,7 @@ def settle_container(root: Path, digest: str) -> int | None:
             if read(exit_path) != exit_receipt:
                 raise RuntimeError("Owned child exit identity changed")
         else:
-            # Persist before removal: recovery can distinguish removed from never-settled.
+            # Retain proof of settlement before removal.
             save(exit_path, exit_receipt)
         if docker("rm", cid).returncode or inspect(cid) is not None:
             raise RuntimeError("Owned container absence unverified")
@@ -255,7 +246,7 @@ def publish_terminal(root: Path, code: int | None, seconds: float) -> None:
 
 
 def settle(root: Path) -> None:
-    """Explicit recovery after owner loss; never create/start/resubmit inference."""
+    """Settle after owner loss, never resubmit inference."""
     if state(root).get("owner_alive"):
         raise RuntimeError("Original owner is alive; observe it instead of taking custody")
     with admission(root.parent):
@@ -270,6 +261,22 @@ def settle(root: Path) -> None:
             publish_terminal(root, code, time.monotonic() - started)
         if current:
             current_write(root.parent, terminal_binding(root))
+
+
+def collect(root: Path) -> None:
+    """Repair only this terminal's current pointer."""
+    if state(root)["state"] not in ("completed", "failed"):
+        settle(root)
+        return
+    binding = terminal_binding(root)
+    pointer = root.parent / "current.json"
+    current = json.loads(private_read(pointer)) if pointer.exists() else None
+    if current and current.get("invocation") == root.name and current != binding:
+        with admission(root.parent):
+            # Re-read custody after admission.
+            current = json.loads(private_read(pointer)) if pointer.exists() else None
+            if current and current.get("invocation") == root.name:
+                current_write(root.parent, terminal_binding(root))
 
 
 def run(root: Path) -> None:
@@ -307,34 +314,20 @@ def run(root: Path) -> None:
         if not (model_root / "snapshots" / request["revision"] / "config.json").is_file():
             raise RuntimeError("Retained pinned checkpoint unavailable; no download")
         phase = "tts" if request["operation"] in ("design", "base") else "asr"
-        args = [
-            "create",
-            "--pull=never",
+        args = shlex.split(
+            "create --pull=never --read-only --network none --gpus all --cap-drop=ALL "
+            "--security-opt=no-new-privileges --memory 64g --memory-swap 64g --cpus 12 "
+            "--pids-limit 512 --tmpfs /tmp:rw,exec,nosuid,nodev,size=1g"
+        )
+        args += [
             "--name",
             name,
             "--label",
             "voices.invocation=" + root.name,
             "--label",
             "voices.request=" + digest,
-            "--read-only",
-            "--network",
-            "none",
-            "--gpus",
-            "all",
-            "--cap-drop=ALL",
-            "--security-opt=no-new-privileges",
-            "--memory",
-            "64g",
-            "--memory-swap",
-            "64g",
-            "--cpus",
-            "12",
-            "--pids-limit",
-            "512",
             "--user",
             f"{os.getuid()}:{os.getgid()}",
-            "--tmpfs",
-            "/tmp:rw,exec,nosuid,nodev,size=1g",
         ]
         for source, target, readonly in (
             (overlay, "/occurrence", True),
@@ -410,9 +403,12 @@ def main() -> None:
     elif operation == "settle":
         settle(root)
         print(json.dumps(state(root)))
+    elif operation == "collect":
+        collect(root)
+        print(json.dumps(state(root)))
     elif operation == "wait":
         while state(root)["state"] in ("unknown", "running"):
-            # Wait only while the exact tmux owner survives; unknown is never replayed.
+            # Never replay; wait only for the exact owner.
             if subprocess.run(["tmux", "has-session", "-t", "voices-" + root.name], capture_output=True).returncode:
                 if not (root / "terminal.json").is_file():
                     raise RuntimeError("Invocation custody requires inspection")

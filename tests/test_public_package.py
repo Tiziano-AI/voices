@@ -5,12 +5,25 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import tomllib
 import zipfile
 from pathlib import Path
 
 import pytest
 
 from devtools import export_public
+from voices import __version__
+
+
+def test_release_versions_agree_across_runtime_build_and_plugin_surfaces() -> None:
+    root = export_public.REPO_ROOT
+    project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
+    lock = tomllib.loads((root / "uv.lock").read_text())
+    locked = [package["version"] for package in lock["package"] if package["name"] == "voices"]
+    assert locked == [project["version"]]
+    assert __version__ == project["version"]
+    for name in ("plugin.json", ".claude-plugin/plugin.json", "web/package.json"):
+        assert json.loads((root / name).read_text())["version"] == project["version"], name
 
 
 def commit_fixture(repo: Path, files: dict[str, str | bytes]) -> None:

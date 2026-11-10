@@ -103,11 +103,13 @@ def inspect_invocation(selection: ComputeSelection, invocation: str) -> dict[str
 def recover_invocation(selection: ComputeSelection, invocation: str) -> ComputeResult:
     """Collect a settled result without regeneration or automatic publication."""
     directory = _directory(selection, invocation)
-    state = inspect_invocation(selection, invocation)
-    if state.get("state") == "unknown":
-        local = json.loads((directory / "selection.json").read_bytes())
-        command = f"python3 {shlex.quote(local['remote'] + '/dgx_worker.py')} settle {shlex.quote(local['remote'])}"
-        state = json.loads(_ssh(selection, command))
+    inspect_invocation(selection, invocation)  # Validate the original SSH selection before any mutation.
+    local = json.loads((directory / "selection.json").read_bytes())
+    command = f"python3 - collect {shlex.quote(local['remote'])}"
+    # Current recovery logic also handles older staged workers without rewriting
+    # their immutable files or changing the generation-time worker provenance.
+    worker = Path(__file__).with_name("dgx_worker.py").read_bytes()
+    state = json.loads(_ssh(selection, command, worker))
     if state.get("state") != "completed" or not state.get("owned_container_absent"):
         raise GenerationError(f"DGX invocation {invocation} is not completed/settled; no replay was attempted.")
     local = json.loads((directory / "selection.json").read_bytes())

@@ -76,7 +76,7 @@ or ambient Node installations to prove Voices is current.
 ## Snapshot and model-loader recovery
 
 A directory containing all model files is not proof of offline Hub resolution.
-Hugging Face Hub 1.30 also uses cached repository-tree inventory. After authorized
+Hugging Face Hub also uses cached repository-tree inventory. After authorized
 materialization through public `snapshot_download(repo_id=..., revision=...)`,
 verify the pinned revision with offline mode. Do not hand-write cache metadata,
 use mutable refs, duplicate caches or private provisioning fallbacks.

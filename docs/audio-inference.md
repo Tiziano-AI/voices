@@ -34,7 +34,10 @@ An interrupted SSH call names its retained invocation and private custody root
 (`--compute-state` can select an isolated root). Use the same SSH selection with
 `--json compute inspect <invocation>` or `--json compute collect <invocation>`.
 Collection can naturally settle the exact invocation-owned child after a dead
-owner's cleanup failure. It refuses live or ambiguous ownership; existing local
+owner's cleanup failure and finish a lost terminal-pointer publication, including
+failed jobs. It uses the installed recovery helper without rewriting the original
+staged worker or generation provenance. Collecting an older terminal result never
+replaces a later invocation's custody. It refuses live or ambiguous ownership; existing local
 collection bytes must match the fetched receipt. These commands never resubmit,
 fall back to MLX, save a voice or publish an
 output. Cancellation can suppress publication without interrupting accepted

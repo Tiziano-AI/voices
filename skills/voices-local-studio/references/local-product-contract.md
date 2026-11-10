@@ -5,13 +5,14 @@ Current operating authority:
 - installed CLI: resolve `command -v voices`; do not assume an installation directory
 - runtime evidence: `voices --json doctor`, including executable, source identity, selected dependency versions, cache and default model revisions
 - explanatory source contracts: `README.md` and `ARCH.md` in the [Voices repository](https://github.com/Tiziano-AI/voices); the bundled references cover operating the installed product without a checkout
-- external consumers use this one installed CLI and standard shared Hugging Face cache, never their own Voices source/Python/venv, duplicate cache or provisioner
+- external consumers use this one installed CLI and, for MLX, the standard shared Hugging Face cache, never their own Voices source/Python/venv, duplicate cache or provisioner; explicit DGX uses its retained offline foundation
 
 Repository development commands are not an operating fallback. Report missing or mismatched installation; do not create a private replacement.
 
 ## Product shape
 
-`voices` is a local-first Apple Silicon voice studio built on Qwen3-TTS through MLX.
+`voices` is a local-first Apple Silicon voice studio built on Qwen3-TTS through
+MLX by default, with explicitly selected optional DGX compute.
 
 - Canonical public surface: CLI
 - Supporting edge: bundled FastAPI browser UI
@@ -38,7 +39,24 @@ Saved voices are reference assets, not trained models.
 - `align`: estimate supplied-text word times from existing audio, with model revision/runtime and explicit non-verification semantics
 - `transcribe`: recognize an existing WAV with required public language and immutable ASR revision; return transcript and audio/model/runtime identity without capture, playback or library writes
 - `ui`: serve the bundled local browser UI
+- `compute inspect`, `compute collect`: inspect or collect one retained DGX invocation without resubmitting, saving a voice or publishing output
 - `delete`: remove a saved voice; use `--dry-run` before destructive deletion
+
+Global `--compute dgx --dgx-host <existing-alias>` and optional
+`--dgx-ssh-config <existing-config>` precede the subcommand and select one CLI
+invocation or studio session. VoiceDesign, Base TTS, audio-only ASR and alignment
+share that selection, with no automatic fallback. Reference review, library,
+capture, normalization, playback and exact-preview export stay on Mac. Existing
+SSH authorization/strict known hosts, retained offline CUDA image, two audio
+overlays, pinned checkpoints and an operator-admitted vacant lane are required;
+Voices provisions none of them or stops other workloads. Never install the Mac
+MLX wheel on DGX. See [Operator Recipes](operator-recipes.md#optional-dgx-compute)
+and [State and recovery](state-and-recovery.md#interrupted-dgx-work).
+
+Doctor's `compute.models` identifies the selected backend's model/revision
+catalogue. Its local `runtime` is not remote readiness or CUDA identity. Remote
+results carry actual checkpoint, worker-source, controls and CUDA/image
+provenance; a completed result does not establish audible quality.
 
 ## Direct delivery contract
 
@@ -84,7 +102,9 @@ The local adapter currently exposes two relevant generation paths:
 
 The local product does not expose the full upstream `qwen_tts` helper surface directly.
 
-The same MLX STT adapter assists record/clone review and public audio-only `transcribe`; no private runtime is needed.
+The selected backend's ASR assists record/clone review and public audio-only
+`transcribe`; no private runtime is needed. MLX uses its shared serialized
+runtime; explicit DGX uses its retained audio overlay.
 
 ## Persisted voice layout
 
@@ -138,6 +158,7 @@ The UI is a supporting local edge. The CLI remains canonical.
 The UI lifecycle contract is:
 
 - `voices ui` launches one local FastAPI/browser process for the selected library and port
+- the studio displays its effective compute backend; selecting DGX does not expose a remote speech listener
 - `--host` accepts loopback hosts only: `127.0.0.1`, `localhost`, or `::1`
 - `--port` selects the listening port for that process
 - cleanup uses the terminal process that launched `voices ui`; there are no `voices ui status` or `voices ui stop` subcommands
